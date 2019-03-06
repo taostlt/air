@@ -8,14 +8,13 @@ from pymunk.pygame_util import DrawOptions
 width = 600
 height = 600
 
-class Ball:
-    def __init__(self, position, space, clock):
+class CoaxialCopter:
+    def __init__(self, position, space):
         self.mass = 1.0
         self.I_z = 0.2
         self.K_m = 0.1
         self.K_f = 0.007
         self.g = 9.8
-        self.clock = clock
 
         self.shape = pymunk.Poly.create_box(None, size=(50, 10))
         self.moment = pymunk.moment_for_poly(self.mass, self.shape.get_vertices())
@@ -31,7 +30,7 @@ class Ball:
     def z_dot_dot(self):
         f_1 = self.K_f * self.omega_1**2
         f_2 = self.K_f * self.omega_2**2
-        f_g = self.m * self.g
+        f_g = self.mass * self.g
         f_total = -f_1 - f_2 + f_g
         acceleration = f_total / self.m
         return acceleration
@@ -45,7 +44,7 @@ class Ball:
         return angular_acc
 
     def set_rotors_angular_velocities(self, linear_acc, angular_acc):
-        term_1 =  self.m * (-linear_acc + self.g) /(2*self.K_f)
+        term_1 =  self.mass * (-linear_acc + self.g) /(2*self.K_f)
         term_2 = self.I_z * angular_acc / (2 * self.K_m)
         omega_1 = math.sqrt(term_1 + term_2)
         omega_2 = math.sqrt(term_1 - term_2)        
@@ -53,9 +52,6 @@ class Ball:
         self.omega_1 = -omega_1
         self.omega_2 = omega_2
         return self.omega_1, self.omega_2
-        
-    def check_time(self):
-        print('clock', self.clock) 
 
 class Ground:
     def __init__(self, space):
@@ -75,11 +71,10 @@ def main():
     draw_options = DrawOptions(screen)
 
     space = pymunk.Space()
-    space.gravity = 0, -100
+    space.gravity = 0, -9.8
     x = random.randint(120, 380)
     ground = Ground(space)
-    ball = Ball((x, 350), space, clock= pygame.time.Clock())
-    ball.check_time()
+    coaxialDrone = CoaxialCopter((x, 350), space)
 
     while True:
         for event in pygame.event.get():
@@ -97,16 +92,17 @@ def main():
        
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-                ball.shape.body.apply_force_at_local_point((0, 400), (0, 0))
+                stable_omega_1,stable_omega_2 = coaxialDrone.set_rotors_angular_velocities(0.0, 0.0)
+                print(stable_omega_1,stable_omega_2)
                 pygame.display.set_caption("His monk flies")
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-            ball.shape.body.apply_force_at_local_point((0, -400), (0, 0))
+            coaxialDrone.shape.body.apply_force_at_local_point((0, -400), (0, 0))
             print('time', pygame.time.Clock())
             pygame.display.set_caption("His monk drop")
             
 
-        ball.shape.body.apply_force_at_local_point((0, 100), (0, 0))
+        # ball.shape.body.apply_force_at_local_point((0, 100), (0, 0))
 
         screen.fill((0, 0, 0))
         space.debug_draw(draw_options)
