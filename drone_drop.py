@@ -10,10 +10,10 @@ height = 600
 
 class CoaxialCopter:
     def __init__(self, position, space):
-        self.mass = 1.0
-        self.I_z = 0.2
         self.K_m = 0.1
-        self.K_f = 0.007
+        self.K_f = 0.1
+        self.mass = 0.5
+        self.I_z = 0.2
         self.g = 9.8
 
         self.shape = pymunk.Poly.create_box(None, size=(50, 10))
