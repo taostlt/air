@@ -9,12 +9,25 @@ width = 600
 height = 600
 
 class CoaxialCopter:
-    def __init__(self, position, space):
-        self.K_m = 0.1
-        self.K_f = 0.1
-        self.mass = 0.5
-        self.I_z = 0.2
+    def __init__(self,
+                 name,
+                 space,
+                 K_m = 0.1,
+                 K_f = 0.1,
+                 mass = 0.5,
+                 I_z = 0.2,
+                 ):
+        self.K_m = K_m
+        self.K_f = K_f
+        self.mass = mass
+        self.I_z = I_z
+
         self.g = 9.8
+        self.omega_1 = 0.0
+        self.omega_2 = 0.0
+        self.name = name
+
+        position = (300, 500)
 
         self.shape = pymunk.Poly.create_box(None, size=(50, 10))
         self.moment = pymunk.moment_for_poly(self.mass, self.shape.get_vertices())
@@ -32,7 +45,7 @@ class CoaxialCopter:
         f_2 = self.K_f * self.omega_2**2
         f_g = self.mass * self.g
         f_total = -f_1 - f_2 + f_g
-        acceleration = f_total / self.m
+        acceleration = f_total / self.mass
         return acceleration
 
     @property
@@ -74,7 +87,15 @@ def main():
     space.gravity = 0, -9.8
     x = random.randint(120, 380)
     ground = Ground(space)
-    coaxialDrone = CoaxialCopter((x, 350), space)
+    myName = 'alx'
+    coaxialDrone = CoaxialCopter('Alex', space)
+    print(coaxialDrone.name)
+    stable_omega_1, stable_omega_2 = coaxialDrone.set_rotors_angular_velocities(0.0, 0.0)
+
+    coaxialDrone.omega_1 = stable_omega_1 * math.sqrt(1.1)
+    coaxialDrone.omega_2 = stable_omega_2 * math.sqrt(1.1)
+
+    vertical_acceleration = coaxialDrone.z_dot_dot
 
     while True:
         for event in pygame.event.get():
@@ -93,7 +114,8 @@ def main():
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
                 stable_omega_1,stable_omega_2 = coaxialDrone.set_rotors_angular_velocities(0.0, 0.0)
-                print(stable_omega_1,stable_omega_2)
+                print('Rotation of propeller 1, 2:', stable_omega_1,stable_omega_2)
+                print('Vertical acceleration =', vertical_acceleration)
                 pygame.display.set_caption("His monk flies")
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
