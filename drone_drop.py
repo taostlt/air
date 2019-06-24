@@ -53,7 +53,7 @@ class CoaxialCopter:
         # leg1 = pymunk.Segment(self.body, (-20, -30), (-10, 0), 3)  # contact point 2
         # leg2 = pymunk.Segment(self.body, (20, -30), (10, 0), 3)
 
-        self.position = (300, 174)  # Position drone starts in space
+        self.position = (300, 300)  # Position drone starts in space
         self.shape.body.position = self.position
         # space.add(self.shape, self.body, leg1, leg2)
         space.add(self.shape, self.body)
@@ -122,7 +122,7 @@ class CoaxialCopter:
         # Calculate Acceleration from Drone's POV
         dynamic_text = z_dot_dot
         # screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 95))
-        # screen.blit(font.render(str(round(dynamic_text, 2)), True, (155, 190, 230)), (185, 75))
+        screen.blit(font.render(str(round(dynamic_text, 2)), True, (155, 190, 230)), (285, 75))
 
         # self.shape.body.position = self.position[0], self.position[1] - self.z
 
@@ -141,9 +141,6 @@ class CoaxialCopter:
         # self.z = round(self.z, 2)
         print(f'The z position is: {self.z}')
 
-        # self.shape.body.apply_force_at_local_point((0, -self.z), (0, 0))
-
-        # self.shape.body.position = self.position[0], self.position[1] - self.z
 
 class Experiment:
     def __init__(self):
@@ -221,8 +218,20 @@ class Experiment:
     #
     # 6/17/19
     # Updating HUD and Card classes
+    # 6/22/19
+    # I just want the drone to fly to 20. Not a cos height. Just 20. How do I plug that into the homework?
+    # If I set z_dot_dot = t/t
+    # and I set z = t**2, then I could get Acc as a straight line, starting at linspace[1.0, 10, 11] instead of zero.
 
+    # 6/23/19
+    # The dt is the distance between intervals. So two seconds, divided by 21 segments results in a dt = 0.1
 
+    # 6/24/19
+    # https://www.sharpsightlabs.com/blog/numpy-linspace/
+    # This is the clearest explanation of linspace. We need 5 ticks to mark off 4 even spaces. 0, 25, 50, 75, 100.
+    # The reason we need 5 ticks is because we start at zero, we place a tick to indicate the start.
+    # The reason we get drift in our graph is because our sign wave doesn't zero at its troughs, cos(3) zeros but
+    # cos(3.011) doesn't.
 
         pass
 
@@ -242,19 +251,15 @@ class Card(pygame.sprite.Sprite):
                  card_color = THECOLORS["royalblue"], color_text = THECOLORS["white"]):
         super(Card, self).__init__()
 
-        offset_x, offset_y = 5, 5  # padding for cards
+        offset_x, offset_y = 5, 5  # padding for cards around the edges
         self.surf = pygame.Surface((card_width + offset_x, card_height + offset_y))
         self.surf.fill(card_color)
         self.rect = self.surf.get_rect()
         self.card_text = card_text
         self.screen = screen
-        # dynamic_text_trunc = float(dynamic_text)
-        # dynamic_text_trunc = round(dynamic_text_trunc, 2)
-        # dynamic_text = str(dynamic_text_trunc)
         screen.blit(self.surf, (card_text_x - offset_x, card_text_y - offset_y))
         screen.blit(font.render(card_text, True, (color_text)), (card_text_x, card_text_y))
         # screen.blit(font.render(dynamic_text, True, (color_text)), (dynamic_text_x, dynamic_text_y))
-
     def id(self):
         print(self.card_text)
 
@@ -297,49 +302,52 @@ class HUD:
     def __init__(self, screen, font):
         self.screen = screen
         self.font = font
-        # screen.blit(font.render("text", True, (THECOLORS['white'])), (300, 300))
-        self.hudList_static = ['T+', 'Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2"]
-        self.hudList_dynamic = list()
 
-    def display(self, seconds_float,  velocity, acceleration, position, loop, dt, omega_1, omega_2):
-        # numberItems = len(self.hudList)
-        screen_origin_X = 10
+    def display(self, CoaxialDrone, time,  velocity, acceleration, position, loop, dt, omega_1, omega_2):
+        screen_origin_X = 10       # Screen location to begin drawing columns
         screen_origin_Y = 15
 
-        rowHeight = 20
-        columnWidth = 100
-        y_vertical = 0
+        rowHeight = 20             # How high should each row be?
+        columnWidth = 100          # How wide should each column be?
+        y_vertical = 0             # Each row should start at the top of the column and advance downwards
 
-        # Blue column headers with background                     (Xorg Yorg Width, Height)
-        labelCard_Column_1 = Card(self.screen, self.font, "Pymunk", 100, 10, 80, 20)
+        print(f'The angular acceleration is: {CoaxialDrone.psi_dot_dot}')
+
+        # Draw Orange Column background            "TEXT"(width) (length)  (background color)
+        time_card = Card(self.screen, self.font, "", 10, 35, 85, 185, THECOLORS['goldenrod'])
+
+        # Draw Blue column headers with text and background     (Xorg Yorg Width, Height)
+        labelCard_Column_1 = Card(self.screen, self.font, "Truth", 100, 10, 80, 20)
         labelCard_Column_2 = Card(self.screen, self.font, "Drone", 185, 10, 80, 20, THECOLORS['cornflowerblue'])
 
-        # Orange Column background:            "TEXT"(width) (length)  (background color)
-        time_card = Card(self.screen, self.font, "", 10, 35, 85, 165, THECOLORS['goldenrod'])
+        label_list = ['T+', 'Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", "Ang_Acc"]
+        truth_list = [time, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2]
+        drone_list = [time, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1,
+                      omega_2, CoaxialDrone.psi_dot_dot]
 
-        for item in self.hudList_static:
-            # print(item)
+        # Description Column from label_list
+        for item in label_list:
             y_vertical += rowHeight
             self.screen.blit(self.font.render(item, True, (THECOLORS['white'])), (screen_origin_X, screen_origin_Y + y_vertical))
-        list = [seconds_float, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2]
 
-        self.hudList_dynamic = Rounded(list)
-        self.hudList_dynamic = self.hudList_dynamic.value()
-
-        y_vertical = 0                                           # reset to zero to start at top row for next list.
-
-        for data in self.hudList_dynamic:
+        # Truth Column from truth_list
+        y_vertical = 0                         # reset to zero to start at top row for next list.
+        hudList_truth = Rounded(truth_list)    # Create an object of Rounded, round the values.
+        hudList_truth = hudList_truth.value()  # Return the new values in the new list
+        for data in hudList_truth:
             # print(data)
             y_vertical += rowHeight
             self.screen.blit(self.font.render(str(data), True, (THECOLORS['white'])),(screen_origin_X + columnWidth, screen_origin_Y + y_vertical))
 
-        y_vertical = 0                                           # reset to zero to start at top row for next list.
-        columnWidth += 80
-        for data in self.hudList_dynamic:
+        # Drone Column from drone_list
+        y_vertical = 0                         # Reset to zero to start at top row for next list.
+        columnWidth += 80                      # Draw 80 spaces to the right of the last column.
+        hudList_drone = Rounded(drone_list)    # Round off values to two places.
+        hudList_drone = hudList_drone.value()  # Return the rounded value as a list
+        for data in hudList_drone:
             # print(data)
             y_vertical += rowHeight
             self.screen.blit(self.font.render(str(data), True, (THECOLORS['white'])),(screen_origin_X + columnWidth, screen_origin_Y + y_vertical))
-
 
     # What does it do?
     # Description: Given a list, it is a mini machine that "paves" the HUD out on the screen for every loop.
@@ -361,51 +369,6 @@ class HUD:
     # - How to display text:
     #     screen.blit(font.render(dynamic_text, True, (color_text)), (dynamic_text_x, dynamic_text_y))
 
-def displayHud(screen, seconds_float, CoaxialDrone, acceleration, loop, dt, dronePosition):
-
-    # print('HUD')
-    color_text = (255, 255, 255)  # white, foreground text of labels
-    font = pygame.font.SysFont('Consolas', 25)
-
-    labelCard_Column_1 = Card(screen, font, "Pymunk", 100, 10, 80, 20, str(seconds_float), 40, 10)
-    labelCard_Column_2 = Card(screen, font, "Drone", 185, 10, 80, 20, str(seconds_float), 40, 10,
-                              THECOLORS['cornflowerblue'])
-
-    # Orange background:                     (width)(length)
-    time_card = Card(screen, font, "T+", 10, 35, 85, 165, str(seconds_float), 120, 35, THECOLORS['goldenrod'])
-
-    # Calculate World Velocity in the y
-    dynamic_text_velocity = CoaxialDrone.shape.body.velocity[1]
-    card_text = 'Velocity:'
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 55))
-    screen.blit(font.render(str(round(dynamic_text_velocity, 2)), True, (color_text)), (115, 55))
-
-    card_text = "Acc"
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 75))
-    screen.blit(font.render(str(round(acceleration, 2)), True, (color_text)), (115, 75))
-    # accelerationCard = Card(screen, font, "Acc", 10,75, 143,20, dynamic_text, 95,75,THECOLORS['royalblue'])
-
-    card_text = "loop"
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 95))
-    screen.blit(font.render(str(round(loop, 2)), True, (color_text)), (115, 95))
-
-    card_text = "dt"
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 115))
-    screen.blit(font.render(str(round(dt, 2)), True, (color_text)), (115, 115))
-
-    card_text = "Omega_1: "
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 135))
-    screen.blit(font.render(str(round(CoaxialDrone.omega_1, 2)), True, (color_text)), (175, 135))
-
-    card_text = "Omega_2: "
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 155))
-    screen.blit(font.render(str(round(CoaxialDrone.omega_2, 2)), True, (color_text)), (175, 155))
-
-    dynamic_text_pos_y = dronePosition[1]  # Z position Only
-    card_text = "Position:"
-    screen.blit(font.render(card_text, True, (255, 255, 255)), (10, 175))
-    screen.blit(font.render(str(round(dynamic_text_pos_y, 2)), True, (color_text)), (115, 175))
-
 class Test:
     def __init__(self, screen, font, first, last):
         self.first = first
@@ -414,7 +377,7 @@ class Test:
         self.font = font
         for i in range(9):
             print(i)
-    def math(self, screen, font):
+    def math(self, screen, font):                           # This was just a test function
         card_text = "Acc"
         acceleration = 10080.0088
         color_text = 255, 255, 255
@@ -430,8 +393,6 @@ def main():
     screen = pygame.display.set_mode((width, height))
     font = pygame.font.SysFont('Consolas', 25)
 
-    # test_1 = Test(screen, font, 'alex', 'Zan')
-
     pygame.display.set_caption("The ball drops")
 
     # Clock
@@ -446,14 +407,16 @@ def main():
 
     # Calculate Time in Seconds
     seconds = (pygame.time.get_ticks() - start_ticks) / 1000
-    seconds_float = float(seconds)
+    time = float(seconds)
     droneHUD = HUD(screen, font)
 
     x = random.randint(120, 380)
-    ground = Ground(space, 144)   # attribute is the height of the ground
+    # ground = Ground(space, 144)   # attribute is the height of the ground
 
     t_history = []
+    z_actual = []
     z_history = []
+
 
     # Add collision handler to object:
     ch = space.add_collision_handler(0, 0)
@@ -465,19 +428,6 @@ def main():
     psi_acc_desired = 0.0
 
     CoaxialDrone = CoaxialCopter('Alex', space)
-    stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
-    print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
-
-    vertical_acc = CoaxialDrone.z_dot_dot
-    print(f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
-
-    CoaxialDrone.omega_1 = stable_omega_1 * math.sqrt(1.1)
-    CoaxialDrone.omega_2 = stable_omega_2 * math.sqrt(0.9)
-    print('Omegas:')
-    print(f'{CoaxialDrone.omega_1:0.3f} {CoaxialDrone.omega_2:0.3f}, vertical acc: {CoaxialDrone.z_dot_dot:0.3f}')
-
-    ang_acc = CoaxialDrone.psi_dot_dot
-    print(f'angular acc {ang_acc}')
 
     loop = 0
 
@@ -531,11 +481,28 @@ def main():
 
         # Calculate Time in Seconds
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000
-        seconds_float = float(seconds)
+        time = float(seconds)
 
-        # Calculate dt, dt = 0.02 in class lessons
-        loop += 1                      # loop is number of frames
-        dt = seconds_float / loop      # The amount of time it takes for each frame
+        # Calculate dt, dt = 0.02 in class lessons, or dt = t[1]-t[0]
+        loop += 1                      # loop is total number of frames
+        dt = time / loop               # The amount of time it takes for each frame, time needed per loop
+
+        stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
+        print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
+
+        vertical_acc = CoaxialDrone.z_dot_dot
+        print(
+            f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
+
+        # CoaxialDrone.omega_1 = stable_omega_1 * math.sqrt(1.1)
+        # CoaxialDrone.omega_2 = stable_omega_2 * math.sqrt(1.1)
+
+        ang_acc = CoaxialDrone.psi_dot_dot
+
+        print('Omegas:')
+        print(f'{CoaxialDrone.omega_1:0.3f} {CoaxialDrone.omega_2:0.3f}, vertical acc: {CoaxialDrone.z_dot_dot:0.3f}')
+
+        print(f'angular acc {ang_acc}')
 
         # Detect Drone's Acceleration Externally
         acceleration = CoaxialDrone.shape.body.velocity[1] / seconds
@@ -549,9 +516,6 @@ def main():
         # Get omega values
         omega_1, omega_2 = CoaxialDrone.omega_1, CoaxialDrone.omega_2
         # print(omega_1, omega_2)
-
-        # Display HUD:
-        # displayHud(screen, seconds_float, CoaxialDrone, acceleration, loop, dt, dronePosition)
 
         # stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(0.0,0.0)
         # F = Kf * omega^2
@@ -568,8 +532,10 @@ def main():
         #
         # a = delta v / delta time
 
-        target_z = np.cos(seconds_float) - 1
-        target_z_dot_dot = -np.cos(seconds_float)
+        # target_z = np.cos(time) - 1
+        # target_z_dot_dot = -np.cos(time)
+
+        target_z_dot_dot = -1.0
 
         # CoaxialDrone.advance_state_uncontrolled(dt)
 
@@ -578,13 +544,27 @@ def main():
         CoaxialDrone.advance_state(screen, font, dt)
         print(f'Force is: {CoaxialDrone.z_dot}')
 
-        # CoaxialDrone.shape.body.position = CoaxialDrone.position[0], CoaxialDrone.position[1] - CoaxialDrone.z
         CoaxialDrone.shape.body.apply_force_at_local_point((0, -CoaxialDrone.z_dot), (0, 0))
 
-        t_history.append(seconds_float)
+        t_history.append(time)
         z_history.append(CoaxialDrone.z)
+        z_actual.append(CoaxialDrone.shape.body.velocity)
 
-        droneHUD.display(seconds_float, velocity, acceleration, position, loop, dt, omega_1, omega_2)
+        if 9.0 < time < 9.5:
+            plt.plot(t_history, z_history, z_actual)
+            # plt.plot(t_history, z_history)
+            # plt.plot(t_history, z_actual)
+
+            # plt.plot(np.cos(t_history))
+            plt.ylabel("Z pos. Est., Z pos Actual")
+            plt.xlabel("Time (seconds)")
+
+            plt.legend(["D","Z Estimated", "Z Actual"])
+
+            plt.show()
+            sys.exit(0)
+
+        droneHUD.display(CoaxialDrone, time, velocity, acceleration, position, loop, dt, omega_1, omega_2)
 
         pygame.display.update()
 
