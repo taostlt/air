@@ -533,9 +533,9 @@ def main():
         # a = delta v / delta time
 
         # target_z = np.cos(time) - 1
-        # target_z_dot_dot = -np.cos(time)
+        target_z_dot_dot = -np.cos(time)*6
 
-        target_z_dot_dot = -1.0
+        # target_z_dot_dot = -1.0
 
         # CoaxialDrone.advance_state_uncontrolled(dt)
 
@@ -551,15 +551,15 @@ def main():
         z_actual.append(CoaxialDrone.shape.body.velocity)
 
         if 9.0 < time < 9.5:
-            plt.plot(t_history, z_history, z_actual)
-            # plt.plot(t_history, z_history)
-            # plt.plot(t_history, z_actual)
+            # plt.plot(t_history, z_history, z_actual)
+            plt.plot(t_history, z_history)
+            plt.plot(t_history, z_actual)
 
             # plt.plot(np.cos(t_history))
             plt.ylabel("Z pos. Est., Z pos Actual")
             plt.xlabel("Time (seconds)")
 
-            plt.legend(["D","Z Estimated", "Z Actual"])
+            plt.legend(["Z Estimated", "Z Actual"])
 
             plt.show()
             sys.exit(0)
