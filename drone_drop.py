@@ -233,6 +233,9 @@ class Experiment:
     # The reason we get drift in our graph is because our sign wave doesn't zero at its troughs, cos(3) zeros but
     # cos(3.011) doesn't.
 
+        # This equation is my attempt at creating an equation that gets the drone to hover. target_z_dot_dot = -np.cos(time)*2 - 1
+        # If I switch to uncontrolled_state(dt), does my graph agree?
+        # https://www.tutorialspoint.com/python/python_matplotlib.htm shows how to create linspace with Pi
         pass
 
 class Ground:
@@ -303,7 +306,7 @@ class HUD:
         self.screen = screen
         self.font = font
 
-    def display(self, CoaxialDrone, time,  velocity, acceleration, position, loop, dt, omega_1, omega_2):
+    def display(self, CoaxialDrone, time, Fnet_truth, thrust_thruth, velocity, acceleration, position, loop, dt, omega_1, omega_2):
         screen_origin_X = 10       # Screen location to begin drawing columns
         screen_origin_Y = 15
 
@@ -313,14 +316,14 @@ class HUD:
 
         print(f'The angular acceleration is: {CoaxialDrone.psi_dot_dot}')
 
-        # Draw Orange Column background            "TEXT"(width) (length)  (background color)
-        time_card = Card(self.screen, self.font, "", 10, 35, 85, 185, THECOLORS['goldenrod'])
+        # Draw Orange Column background       "TEXT" (width) (length-row height)[background color]
+        time_card = Card(self.screen, self.font, "", 10, 35, 85, 205, THECOLORS['goldenrod'])
 
         # Draw Blue column headers with text and background     (Xorg Yorg Width, Height)
         labelCard_Column_1 = Card(self.screen, self.font, "Truth", 100, 10, 80, 20)
         labelCard_Column_2 = Card(self.screen, self.font, "Drone", 185, 10, 80, 20, THECOLORS['cornflowerblue'])
 
-        label_list = ['T+', 'Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", "Ang_Acc"]
+        label_list = ['T+', 'Trust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", "Ang_Acc"]
         truth_list = [time, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2]
         drone_list = [time, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1,
                       omega_2, CoaxialDrone.psi_dot_dot]
@@ -332,7 +335,7 @@ class HUD:
 
         # Truth Column from truth_list
         y_vertical = 0                         # reset to zero to start at top row for next list.
-        hudList_truth = Rounded(truth_list)    # Create an object of Rounded, round the values.
+        hudList_truth = Rounded(truth_list)    # Create an object of type Rounded, round the values.
         hudList_truth = hudList_truth.value()  # Return the new values in the new list
         for data in hudList_truth:
             # print(data)
@@ -403,7 +406,9 @@ def main():
     draw_options = DrawOptions(screen)
 
     space = pymunk.Space()
-    space.gravity = 0, -9.800
+    space.gravity = 0, 9.800
+    gravity_float = float(space.gravity[1])
+    print(f'Gravity float: {gravity_float}')
 
     # Calculate Time in Seconds
     seconds = (pygame.time.get_ticks() - start_ticks) / 1000
@@ -411,12 +416,11 @@ def main():
     droneHUD = HUD(screen, font)
 
     x = random.randint(120, 380)
-    # ground = Ground(space, 144)   # attribute is the height of the ground
+    ground = Ground(space, 144)   # attribute is the height of the ground
 
     t_history = []
     z_actual = []
     z_history = []
-
 
     # Add collision handler to object:
     ch = space.add_collision_handler(0, 0)
@@ -486,6 +490,7 @@ def main():
         # Calculate dt, dt = 0.02 in class lessons, or dt = t[1]-t[0]
         loop += 1                      # loop is total number of frames
         dt = time / loop               # The amount of time it takes for each frame, time needed per loop
+                                       # dt is the time required to increment each step.
 
         stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
         print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
@@ -505,13 +510,13 @@ def main():
         print(f'angular acc {ang_acc}')
 
         # Detect Drone's Acceleration Externally
-        acceleration = CoaxialDrone.shape.body.velocity[1] / seconds
+        acceleration_truth = CoaxialDrone.shape.body.velocity[1] / seconds   # Where seconds is (pygame.time.get_ticks() - start_ticks)
 
         # Detect Drone's Velocity Externally
-        velocity = CoaxialDrone.shape.body.velocity
+        velocity_truth = CoaxialDrone.shape.body.velocity
 
-        # Detect Drone's position
-        position = CoaxialDrone.shape.body.position
+        # Detect Drone's position Externally
+        position_truth = CoaxialDrone.shape.body.position
 
         # Get omega values
         omega_1, omega_2 = CoaxialDrone.omega_1, CoaxialDrone.omega_2
@@ -533,25 +538,37 @@ def main():
         # a = delta v / delta time
 
         # target_z = np.cos(time) - 1
-        target_z_dot_dot = -np.cos(time)*6
+        # target_z_dot_dot = -np.cos(time)*2 - 1
 
         # target_z_dot_dot = -1.0
 
-        # CoaxialDrone.advance_state_uncontrolled(dt)
+        CoaxialDrone.advance_state_uncontrolled(dt)
 
-        CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
+        # CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
 
-        CoaxialDrone.advance_state(screen, font, dt)
-        print(f'Force is: {CoaxialDrone.z_dot}')
+        # CoaxialDrone.advance_state(screen, font, dt)
+        print(f'Velocity is: {CoaxialDrone.z_dot}')
 
-        CoaxialDrone.shape.body.apply_force_at_local_point((0, -CoaxialDrone.z_dot), (0, 0))
+        # Fnet = ma, F = m(g - a), m*g - m*a. space.gravity = (0, 9.8)
+        # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
+        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * velocity_truth / seconds
+        print(f"Fnet_truth = {Fnet_truth}")
+
+        thrust_truth = CoaxialDrone.mass*gravity_float - Fnet_truth
+        print(f'thrust truth: {thrust_truth}')
+
+
+        CoaxialDrone.shape.body.apply_force_at_local_point((0,gravity_float), (0, 0)) # arguments: (self._body, tuple(force), tuple(point))
+        # CoaxialDrone.shape.body.apply_force_at_local_point((0,0),(0,0))
+        # CoaxialDrone.shape.body.velocity_func = 200.0  ; we are not encouraged to set velocity directly. Just Force.
 
         t_history.append(time)
         z_history.append(CoaxialDrone.z)
         z_actual.append(CoaxialDrone.shape.body.velocity)
 
-        if 9.0 < time < 9.5:
+        if 8.0 < time < 8.5:
             # plt.plot(t_history, z_history, z_actual)
+            plt.plot(t_history)
             plt.plot(t_history, z_history)
             plt.plot(t_history, z_actual)
 
@@ -564,7 +581,7 @@ def main():
             plt.show()
             sys.exit(0)
 
-        droneHUD.display(CoaxialDrone, time, velocity, acceleration, position, loop, dt, omega_1, omega_2)
+        droneHUD.display(CoaxialDrone, time, Fnet_truth, thrust_truth, velocity_truth, acceleration_truth, position_truth, loop, dt, omega_1, omega_2)
 
         pygame.display.update()
 
