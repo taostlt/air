@@ -306,27 +306,27 @@ class HUD:
         self.screen = screen
         self.font = font
 
-    def display(self, CoaxialDrone, time, Fnet_truth, thrust_thruth, velocity, acceleration, position, loop, dt, omega_1, omega_2):
+    def display(self, CoaxialDrone, time, Fnet_truth, thrust_truth, velocity, acceleration, position, loop, dt, omega_1, omega_2):
         screen_origin_X = 10       # Screen location to begin drawing columns
         screen_origin_Y = 15
 
-        rowHeight = 20             # How high should each row be?
+        rowHeight = 20             # How high should each row be, without padding?
         columnWidth = 100          # How wide should each column be?
         y_vertical = 0             # Each row should start at the top of the column and advance downwards
 
         print(f'The angular acceleration is: {CoaxialDrone.psi_dot_dot}')
 
-        # Draw Orange Column background       "TEXT" (width) (length-row height)[background color]
-        time_card = Card(self.screen, self.font, "", 10, 35, 85, 205, THECOLORS['goldenrod'])
+        label_list = ['T+', 'Fnet', 'Thrust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", 'Ang_Acc']
+        truth_list = [time, Fnet_truth, thrust_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2]
+        drone_list = [time, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
+
+        # Draw Orange Column background       "TEXT" (width) (row height) [background color]
+        time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
 
         # Draw Blue column headers with text and background     (Xorg Yorg Width, Height)
         labelCard_Column_1 = Card(self.screen, self.font, "Truth", 100, 10, 80, 20)
         labelCard_Column_2 = Card(self.screen, self.font, "Drone", 185, 10, 80, 20, THECOLORS['cornflowerblue'])
 
-        label_list = ['T+', 'Trust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", "Ang_Acc"]
-        truth_list = [time, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2]
-        drone_list = [time, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1,
-                      omega_2, CoaxialDrone.psi_dot_dot]
 
         # Description Column from label_list
         for item in label_list:
@@ -515,6 +515,7 @@ def main():
         # Detect Drone's Velocity Externally
         velocity_truth = CoaxialDrone.shape.body.velocity
 
+
         # Detect Drone's position Externally
         position_truth = CoaxialDrone.shape.body.position
 
@@ -551,8 +552,8 @@ def main():
 
         # Fnet = ma, F = m(g - a), m*g - m*a. space.gravity = (0, 9.8)
         # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
-        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * velocity_truth / seconds
-        print(f"Fnet_truth = {Fnet_truth}")
+        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * float(velocity_truth[1]) / seconds
+        print(f'Fnet_truth = {Fnet_truth}')
 
         thrust_truth = CoaxialDrone.mass*gravity_float - Fnet_truth
         print(f'thrust truth: {thrust_truth}')
@@ -581,7 +582,7 @@ def main():
             plt.show()
             sys.exit(0)
 
-        droneHUD.display(CoaxialDrone, time, Fnet_truth, thrust_truth, velocity_truth, acceleration_truth, position_truth, loop, dt, omega_1, omega_2)
+        droneHUD.display(CoaxialDrone, time, 10,20, velocity_truth, acceleration_truth, position_truth, loop, dt, omega_1, omega_2)
 
         pygame.display.update()
 
