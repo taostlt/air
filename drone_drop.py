@@ -52,7 +52,7 @@ class CoaxialCopter:
         self.body = pymunk.Body(self.mass, self.moment)
         self.shape.body = self.body
         # leg1 = pymunk.Segment(self.body, (-20, -30), (-10, 0), 3)  # contact point 2
-        # leg2 = pymunk.Segment(self.body, (20, -30), (10, 0), 3)
+        # leg2 = pymunk.Segment(self.body, (20, -30), (10, 0), 3)    # contact point 1
 
         self.position = (300, 174)
         # self.position = (300, 300)  # Position where the drone starts in space
