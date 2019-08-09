@@ -1,4 +1,3 @@
-# Code updated 8/9/19
 # https://github.com/viblo/pymunk/blob/master/examples/breakout.py
 import pygame
 import pymunk
@@ -60,7 +59,6 @@ class CoaxialCopter:
         self.shape.body.position = self.position
         # space.add(self.shape, self.body, leg1, leg2)
         space.add(self.shape, self.body)
-
 
     def set_rotors_angular_velocities(self, linear_acc, angular_acc):
         term_1 = self.mass * (-linear_acc + self.g) / (2 * self.K_f)
@@ -516,6 +514,7 @@ def main():
         # The answer given is 2.45 rad/s^2, the found answer is: 2.45 rad/s^2
         # #-----------------------------------------------------
 
+
         ang_acc_truth = CoaxialDrone.body.angular_velocity
         ang_acc = CoaxialDrone.psi_dot_dot
 
@@ -556,7 +555,12 @@ def main():
 
         # target_z_dot_dot = -1.0
 
+        # BENCH MARK B: Lesson 1 > Controls-Lesson_1 > 2_Advanced State for (Un)controlled drone.
         CoaxialDrone.advance_state_uncontrolled(dt)
+        # Z height homework = 490.
+        # Z height PyDrone (simulator) = 558.
+        # 558 / 490 is 14% out of tolerance
+        # -----------------------------------------
 
         # CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
 
