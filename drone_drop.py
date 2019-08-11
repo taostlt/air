@@ -77,15 +77,12 @@ class CoaxialCopter:
     def z_dot_dot(self):
         f_1 = self.K_f * self.omega_1**2
         f_2 = self.K_f * self.omega_2**2
-        # print('Kf, f_1, f_2, inside z_dot_dot function: ', self.K_f, f_1, f_2)
-        # print('f1, f2, inside function: ', f_1, f_2)
-        # print('Omega 1, Omega 2, inside function: ', self.omega_1, self.omega_2)
-
         f_g = self.mass * self.g
-        # print('fg: ', f_g)
+        print('fg: ', f_g)
         f_total = -f_1 - f_2 + f_g
-        # print('f_total: ', f_total)
+        print('f_total: ', f_total)
         vertical_acceleration = f_total / self.mass
+        print(f'Vertical acc is: {vertical_acceleration}')
         return vertical_acceleration
 
     @property
@@ -314,7 +311,7 @@ class HUD:
 
         label_list = ['T+', 'Fnet', 'Thrust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", 'Ang_Acc']
         truth_list = [time, Fnet_truth, thrust_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2, ang_acc_truth]
-        drone_list = [time, Fnet_truth, thrust_truth, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
+        drone_list = [time, Fnet_truth, 2000, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
 
         # Draw Orange Column background       "TEXT" (width) (row height) [background color]
         time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
@@ -433,7 +430,6 @@ def main():
 
     CoaxialDrone = CoaxialCopter('Alex', space)                    # Create drone that can fly
     loop = 0                                                       # Initialize frame counter
-
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -491,12 +487,12 @@ def main():
         dt = time / loop               # The amount of time it takes for each frame, time needed per loop
                                        # dt is the time required to increment each step or frame.
 
-        stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
-        print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
+        # stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
+        # print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
 
         vertical_acc = CoaxialDrone.z_dot_dot
-        print(
-            f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
+        # print(
+        #     f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
 
         #BENCH MARK A ----------------------------------------
         # CoaxialDrone.omega_1 = stable_omega_1 * math.sqrt(2.1)
@@ -558,15 +554,15 @@ def main():
         # CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
 
         # CoaxialDrone.advance_state(dt)
-        # CoaxialDrone.advance_state_uncontrolled(dt)
+        CoaxialDrone.advance_state_uncontrolled(dt)
         print(f'Velocity is: {CoaxialDrone.z_dot}')
 
-        # Fnet = ma, F = m(g - a), m*g - m*a.    g = space.gravity = (0, 9.8)
+        # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
         # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
-        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * float(velocity_truth[1]) / seconds
+        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * float(velocity_truth[1] / seconds)
         print(f'Fnet_truth = {Fnet_truth}')
 
-        thrust_truth = CoaxialDrone.mass*gravity_float - Fnet_truth
+        thrust_truth = CoaxialDrone.mass * gravity_float - Fnet_truth
         print(f'thrust truth: {thrust_truth}')
         print(f'target z dot dot: {target_z_dot_dot}')
         # CoaxialDrone.shape.body.apply_force_at_local_point((0,), (0, 0))  # arguments: (self._body, tuple(force), tuple(point))
@@ -577,7 +573,7 @@ def main():
         t_history.append(time)
         z_history.append(CoaxialDrone.z)
         z_actual.append(CoaxialDrone.shape.body.position)
-        target_z_dot_dot_history.append(-np.cos(time))
+        # target_z_dot_dot_history.append(-np.cos(time))
 
         droneHUD.display(CoaxialDrone, time,
                          Fnet_truth, thrust_truth,
@@ -585,7 +581,7 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 10.00 < time < 10.05:
+        if 5.00 < time < 5.05:
             # BENCHMARK C:
             print(f'The Z height at around 10 seconds is: {z_history[-1]}')
 
@@ -600,7 +596,7 @@ def main():
             plt.ylabel("Z pos. Est., Z pos Actual")
             plt.xlabel("Time (seconds)")
             plt.legend(["Time","Z Actual", "Z Drone", "target z dot dot"])
-            # plt.gca().invert_yaxis()
+            plt.gca().invert_yaxis()
             plt.show()
             sys.exit(0)
 
