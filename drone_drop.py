@@ -584,19 +584,43 @@ def main():
         if 5.00 < time < 5.05:
             # BENCHMARK C:
             print(f'The Z height at around 10 seconds is: {z_history[-1]}')
-
-            # plt.plot(t_history, z_history, z_actual, target_z_dot_dot_history)
             print(f'The time is: {t_history}')
-            plt.plot(t_history, t_history)
-            plt.plot(t_history, z_actual)
+            # plt.plot(t_history, t_history)
+            # plt.plot(t_history, z_actual)
+
             # plt.plot(t_history, z_actual)
             # plt.plot(t_history, target_z_dot_dot_history)
-
             # plt.plot(np.cos(t_history))
-            plt.ylabel("Z pos. Est., Z pos Actual")
-            plt.xlabel("Time (seconds)")
-            plt.legend(["Time","Z Actual", "Z Drone", "target z dot dot"])
-            plt.gca().invert_yaxis()
+
+            x1 = np.linspace(0.0, 5.0)
+            x2 = np.linspace(0.0, 2.0)
+            x3 = np.linspace(0.0, 5.0)
+
+            y1 = np.cos(2 * np.pi * x1) * np.exp(-x1)
+            y2 = np.cos(2 * np.pi * x2)
+            y3 = np.cos(2 * np.pi * x3) * np.sin(x3)
+
+            plt.subplot(2, 1, 1)
+            plt.plot(x1, y1, 'o-')
+            plt.title('time')
+            plt.ylabel('Plot 1')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(x2, y2, '.-')
+            plt.title('2')
+            plt.xlabel('time')
+            plt.ylabel('Plot 2')
+
+            plt.subplot(2, 1, 2)
+            plt.plot(x3, y3, '.-')
+            plt.title('3')
+            plt.xlabel('time')
+            plt.ylabel('Plot 3')
+
+            # plt.ylabel("Z pos. Est., Z pos Actual")
+            # plt.xlabel("Time (seconds)")
+            # plt.legend(["Time","Z Actual", "Z Drone", "target z dot dot"])
+            # plt.gca().invert_yaxis()
             plt.show()
             sys.exit(0)
 
