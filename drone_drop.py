@@ -581,7 +581,8 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 5.00 < time < 5.05:
+        if 2.00 < time < 2.05:
+
             # BENCHMARK C:
             print(f'The Z height at around 10 seconds is: {z_history[-1]}')
             print(f'The time is: {t_history}')
@@ -592,42 +593,46 @@ def main():
             # plt.plot(t_history, target_z_dot_dot_history)
             # plt.plot(np.cos(t_history))
 
-            x1 = np.linspace(0.0, 5.0)
-            x2 = np.linspace(0.0, 2.0)
-            x3 = np.linspace(0.0, 5.0)
+            X = np.linspace(-np.pi, np.pi, 256, endpoint=True)
+            Y = np.cos(X)
 
-            y1 = np.cos(2 * np.pi * x1) * np.exp(-x1)
-            y2 = np.cos(2 * np.pi * x2)
-            y3 = np.cos(2 * np.pi * x3) * np.sin(x3)
+            plt.figure(figsize=(12,4))
+            plt.subplot(1,3,1)           # (row, column, index)
 
-            x = np.linspace(0, 2 * np.pi, 400)
-            y = np.sin(x ** 2)
+            plt.plot(X, Y, color="blue")
+            plt.title('subplot(2,2,1)')
+            plt.xlabel('Time')
+            plt.ylabel('Position')
+            plt.legend(['X','Y'])
 
-            fig, ax = plt.subplots(3)
-            ax[0].plot(x,y)
-            ax[1].plot(-x,y)
-            ax[2].plot(x,-y)
+            plt.subplot(1, 3, 2)
+            plt.plot(X, Y * -1, color="red")
+            plt.title('subplot(2,2,2)')
+            plt.xlabel('Time')
+            plt.ylabel('Position')
+            plt.legend(['X', 'Y'])
 
-            fig.suptitle('Vertically Stacked Subplots')
+            plt.subplot(1, 3, 3)
+            plt.plot(X, Y * -1, color="green")
+            plt.title('subplot(2,2,3)')
+            plt.xlabel('Time')
+            plt.ylabel('Position')
+            plt.legend(['X', 'Y'])
+            plt.tight_layout(2.5)        #This adjusts the padding.
+            # plt.subplots_adjust(left=0.02, bottom=0, right=1, top=1, wspace=0.2, hspace=1)
 
-            # ax1.plot(x1, y1)
-            # ax2.plot(x1, y1)
-            # plt.subplot(2, 1, 1)
-            # plt.plot(x1, y1, 'o-')
-            # plt.title('time')
-            # plt.ylabel('Plot 1')
-            #
-            # plt.subplot(2, 1, 2)
-            # plt.plot(x2, y2, '.-')
-            # plt.title('2')
-            # plt.xlabel('time')
-            # plt.ylabel('Plot 2')
-            #
-            # plt.subplot(2, 1, 2)
-            # plt.plot(x3, y3, '.-')
-            # plt.title('3')
-            # plt.xlabel('time')
-            # plt.ylabel('Plot 3')
+            # plt.subplot(2, 2, 4)
+            # plt.plot(X, Y, color="black")
+            # plt.title('subplot(2,2,4)')
+
+
+            x1 = t_history
+            x2 = z_history
+            x3 = z_history
+
+            y1 = z_actual
+            y2 = z_history
+            y3 = z_history
 
             # plt.ylabel("Z pos. Est., Z pos Actual")
             # plt.xlabel("Time (seconds)")
