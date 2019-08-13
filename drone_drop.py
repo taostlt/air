@@ -316,7 +316,7 @@ class HUD:
         # Draw Orange Column background       "TEXT" (width) (row height) [background color]
         time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
 
-        # Draw Blue column headers with text and background     (Xorg Yorg Width, Height)
+        # Draw Blue column headers with text and background      (Xorg Yorg Width, Height)
         labelCard_Column_1 = Card(self.screen, self.font, "Truth", 100, 10, 80, 20)
         labelCard_Column_2 = Card(self.screen, self.font, "Drone", 185, 10, 80, 20, THECOLORS['cornflowerblue'])
 
@@ -327,7 +327,7 @@ class HUD:
 
         # Truth Column from truth_list
         y_vertical = 0                         # reset to zero to start at top row for next list.
-        hudList_truth = Rounded(truth_list)    # Create an object of type Rounded, round the values.
+        hudList_truth = Rounded(truth_list)    # Create an object of type Rounded, round the values of the array.
         hudList_truth = hudList_truth.value()  # Return the new values in the new list
         for data in hudList_truth:
             # print(data)
@@ -337,7 +337,7 @@ class HUD:
         # Drone Column from drone_list
         y_vertical = 0                         # Reset to zero to start at top row for next list.
         columnWidth += 80                      # Draw 80 spaces to the right of the last column.
-        hudList_drone = Rounded(drone_list)    # Round off values to two places.
+        hudList_drone = Rounded(drone_list)    # Round off values to two places (array).
         hudList_drone = hudList_drone.value()  # Return the rounded value as a list
         for data in hudList_drone:
             # print(data)
@@ -349,13 +349,13 @@ class HUD:
     # Use Case: Add Angular Acc.
     #
     # - It can count the amount of items in the list.
-    # - It can display the text in order from top to bottom starting from a given point origin.
+    # - It can display the text in order from top to bottom starting from a given point - origin.
     #
     # What does it know?
     # What the labels are. The text of the labels. Where the labels should go on the screen, how high they are.
     # - The list of labels.
     # - The text of the label.
-    # - The total height of the graphics.
+    # - cancel: The total height of the graphics.
     # - The desired color of the background.
     # - The desired color of the text.
     # - The desired position of the background.
@@ -382,7 +382,6 @@ class Test:
         return self.first + self.last
 
 def main():
-
     pygame.init()
 
     screen = pygame.display.set_mode((width, height))
@@ -411,8 +410,11 @@ def main():
     # ground = Ground(space, 144)   # attribute is the height of the ground
 
     t_history = []
-    z_actual = []
+    z_position_truth = []
     z_history = []
+    z_velocity_truth = []
+    z_acceleration_truth = []
+    z_dt = []
 
     # Add collision handler to object:
     ch = space.add_collision_handler(0, 0)
@@ -430,6 +432,7 @@ def main():
 
     CoaxialDrone = CoaxialCopter('Alex', space)                    # Create drone that can fly
     loop = 0                                                       # Initialize frame counter
+    dt = 0
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -572,8 +575,10 @@ def main():
         # CoaxialDrone.shape.body.velocity_func = 200.0  ; we are not encouraged to set velocity directly. Just Force.
         t_history.append(time)
         z_history.append(CoaxialDrone.z)
-        z_actual.append(CoaxialDrone.shape.body.position)
-        # target_z_dot_dot_history.append(-np.cos(time))
+        z_position_truth.append(CoaxialDrone.shape.body.position[1])
+        z_velocity_truth.append(CoaxialDrone.shape.body.velocity[1])
+        z_acceleration_truth.append(acceleration_truth)
+        z_dt.append(dt)
 
         droneHUD.display(CoaxialDrone, time,
                          Fnet_truth, thrust_truth,
@@ -581,56 +586,80 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 2.00 < time < 2.05:
+        if 3.00 < time < 3.05:
+            print(f'z_actual: {z_position_truth}')
+            print(f'Length of t_history: {len(t_history)}')
 
             # BENCHMARK C:
-            print(f'The Z height at around 10 seconds is: {z_history[-1]}')
-            print(f'The time is: {t_history}')
+            print(f'The Z height (truth) at around {time} seconds is: {z_position_truth[-1]}')        # Get last value in array
+            print(f'The Z velocity (truth) at around {time} seconds is: {velocity_truth[1]}')
+            print(f'The Z acceleration (truth using a = v / t) at around {time} seconds is: {round((velocity_truth[1]/time),2)}')
+            print(f'Z acceleration truth: {z_acceleration_truth}')
+            print(f'z dt is: {z_dt}')
+
             # plt.plot(t_history, t_history)
             # plt.plot(t_history, z_actual)
-
             # plt.plot(t_history, z_actual)
             # plt.plot(t_history, target_z_dot_dot_history)
             # plt.plot(np.cos(t_history))
 
-            X = np.linspace(-np.pi, np.pi, 256, endpoint=True)
-            Y = np.cos(X)
+            # X = np.linspace(-np.pi, np.pi, 256, endpoint=True)
+            # Y = np.ones(len(t_history))
 
-            plt.figure(figsize=(12,4))
-            plt.subplot(1,3,1)           # (row, column, index)
+            X1 = t_history
+            Y1 = z_position_truth
 
-            plt.plot(X, Y, color="blue")
-            plt.title('subplot(2,2,1)')
+            X2 = t_history
+            Y2 = z_velocity_truth
+
+            X3 = t_history
+            Y3 = z_acceleration_truth
+
+            X4 = t_history
+            Y4 = z_dt
+
+            plt.figure(figsize=(13,4))
+            row = 1
+            column = 4
+            plt.subplot(row,column,1)             # (row, column, index)
+            plt.plot(X1, Y1, color="blue")
+            plt.title('Position')
             plt.xlabel('Time')
             plt.ylabel('Position')
-            plt.legend(['X','Y'])
+            plt.legend(['Z','Y1'])
 
-            plt.subplot(1, 3, 2)
-            plt.plot(X, Y * -1, color="red")
-            plt.title('subplot(2,2,2)')
+            plt.subplot(row,column,2)             # (row, column, index)
+            plt.plot(X2, Y2, color="red")
+            plt.title('Velocity')
             plt.xlabel('Time')
-            plt.ylabel('Position')
-            plt.legend(['X', 'Y'])
+            plt.ylabel('Velocity')
+            plt.legend(['Z dot', 'Y2'])
 
-            plt.subplot(1, 3, 3)
-            plt.plot(X, Y * -1, color="green")
-            plt.title('subplot(2,2,3)')
+            plt.subplot(row,column,3)             # (row, column, index)
+            plt.plot(X3, Y3, color="green")
+            plt.title('Acceleration')
             plt.xlabel('Time')
-            plt.ylabel('Position')
-            plt.legend(['X', 'Y'])
-            plt.tight_layout(2.5)        #This adjusts the padding.
+            plt.ylabel('Acceleration')
+            plt.legend(['Z dot dot', 'Y3'])
+
+            plt.subplot(row,column,4)             # (row, column, index)
+            plt.plot(X4, Y4, color="black")
+            plt.title('dt - time step')
+            plt.xlabel('Time')
+            plt.ylabel('dt')
+            plt.legend(['dt', 'Y3'])
+            plt.tight_layout(2.5)             # This adjusts the padding around the graphs.
             # plt.subplots_adjust(left=0.02, bottom=0, right=1, top=1, wspace=0.2, hspace=1)
 
             # plt.subplot(2, 2, 4)
             # plt.plot(X, Y, color="black")
             # plt.title('subplot(2,2,4)')
 
-
             x1 = t_history
             x2 = z_history
             x3 = z_history
 
-            y1 = z_actual
+            y1 = z_position_truth
             y2 = z_history
             y3 = z_history
 
