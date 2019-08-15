@@ -519,13 +519,13 @@ def main():
         print(f'{CoaxialDrone.omega_1:0.3f} {CoaxialDrone.omega_2:0.3f}, vertical acc: {CoaxialDrone.z_dot_dot:0.3f}')
         print(f'angular acc {ang_acc}')
 
-        # Detect Drone's Acceleration Externally
+        # Detect Drone's Acceleration Externally (Ground Truth)
         acceleration_truth = CoaxialDrone.shape.body.velocity[1] / seconds  # Where seconds is (pygame.time.get_ticks() - start_ticks)
                                                                             # Where velocity has an x,y component but HUD only shows velocity[1]
         # Detect Drone's Velocity Externally
         velocity_truth = CoaxialDrone.shape.body.velocity                   # Velocity and Position Vectors are parsed in Rounded fnc.
 
-        # Detect Drone's position Externally
+        # Detect Drone's position Externally (Ground Truth)
         position_truth = CoaxialDrone.shape.body.position                   # Vec2d(tuple) where position[1] is z height.
 
         # Get omega values
@@ -586,7 +586,7 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 3.00 < time < 3.05:
+        if 2.00 < time < 2.05:
             print(f'z_actual: {z_position_truth}')
             print(f'Length of t_history: {len(t_history)}')
 
