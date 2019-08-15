@@ -295,8 +295,8 @@ class HUD:
         self.screen = screen
         self.font = font
 
-    def display(self, CoaxialDrone, time,
-                Fnet_truth, thrust_truth,
+    def display(self, CoaxialDrone, time, g,
+                Fnet_truth, mg, thrust_truth,
                 velocity, acceleration, position,
                 loop, dt, omega_1, omega_2,
                 ang_acc_truth):
@@ -309,9 +309,9 @@ class HUD:
 
         print(f'The angular acceleration is: {CoaxialDrone.psi_dot_dot}')
 
-        label_list = ['T+', 'Fnet', 'Thrust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", 'Ang_Acc']
-        truth_list = [time, Fnet_truth, thrust_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2, ang_acc_truth]
-        drone_list = [time, Fnet_truth, 2000, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
+        label_list = ['T+', 'Fnet', 'g', 'm(g)','Thrust','Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", 'Ang_Acc']
+        truth_list = [time, Fnet_truth, g, mg, thrust_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2, ang_acc_truth]
+        drone_list = [time, Fnet_truth, g, mg, 2000, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
 
         # Draw Orange Column background       "TEXT" (width) (row height) [background color]
         time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
@@ -397,8 +397,15 @@ def main():
     draw_options = DrawOptions(screen)
 
     space = pymunk.Space()
-    space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly, as seen here, it defines 'down' as a negative acceleration.
-    gravity_float = float(space.gravity[1])
+    #space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly by default,
+                                # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
+    j = pymunk.vec2d.Vec2d(-1.0, -1.0)       # j is a unit vector to indicate direction (ie. khan academy "normal force elevator")
+    space.gravity = 0, 9.8
+    print(f'$$$$$$$$$$$$$$$$$$ Space Gravity: $$$$$$$$$$$$$$$$$$$ {space.gravity, j}')
+
+    ref_gravity = space.gravity * j
+    print(f'Gravity = {ref_gravity}')
+    gravity_float = float(9.8)
     print(f'Gravity float: {gravity_float}')
 
     # Calculate Time in Seconds
@@ -432,7 +439,8 @@ def main():
 
     CoaxialDrone = CoaxialCopter('Alex', space)                    # Create drone that can fly
     loop = 0                                                       # Initialize frame counter
-    dt = 0
+    dt = 0                                                         # Initialize steps
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -494,8 +502,9 @@ def main():
         # print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
 
         vertical_acc = CoaxialDrone.z_dot_dot
+
         # print(
-        #     f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
+        # f'Given linear_acc = {linear_acc_desired}, and psi_acc = {psi_acc_desired} of a drone with a mass of {CoaxialDrone.mass} and gravity of {CoaxialDrone.g} results \n in {stable_omega_1:0.3f} , {stable_omega_2:0.3f} -> vert_acc: {vertical_acc:0.4f}')
 
         #BENCH MARK A ----------------------------------------
         # CoaxialDrone.omega_1 = stable_omega_1 * math.sqrt(2.1)
@@ -519,14 +528,15 @@ def main():
         print(f'{CoaxialDrone.omega_1:0.3f} {CoaxialDrone.omega_2:0.3f}, vertical acc: {CoaxialDrone.z_dot_dot:0.3f}')
         print(f'angular acc {ang_acc}')
 
+        # Calculate Ground Truth's for drones Z, Z., Z..
         # Detect Drone's Acceleration Externally (Ground Truth)
-        acceleration_truth = CoaxialDrone.shape.body.velocity[1] / seconds  # Where seconds is (pygame.time.get_ticks() - start_ticks)
-                                                                            # Where velocity has an x,y component but HUD only shows velocity[1]
+        acceleration_truth = j*CoaxialDrone.shape.body.velocity[1] / seconds  # Where seconds is (pygame.time.get_ticks() - start_ticks)
+                                                                              # Where velocity has an x,y component but HUD only shows velocity[1]
         # Detect Drone's Velocity Externally
         velocity_truth = CoaxialDrone.shape.body.velocity                   # Velocity and Position Vectors are parsed in Rounded fnc.
 
         # Detect Drone's position Externally (Ground Truth)
-        position_truth = CoaxialDrone.shape.body.position                   # Vec2d(tuple) where position[1] is z height.
+        position_truth = j * CoaxialDrone.shape.body.position                   # Vec2d(tuple) where position[1] is z height.
 
         # Get omega values
         omega_1, omega_2 = CoaxialDrone.omega_1, CoaxialDrone.omega_2
@@ -562,12 +572,18 @@ def main():
 
         # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
         # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
-        Fnet_truth = CoaxialDrone.mass * gravity_float - CoaxialDrone.mass * float(velocity_truth[1] / seconds)
+        # Constant velocity has no net force. Fnet = 0.
+
+        mg = CoaxialDrone.mass * gravity_float
+
+        Fnet_truth = mg - CoaxialDrone.mass * float(velocity_truth[1] / seconds)
         print(f'Fnet_truth = {Fnet_truth}')
 
         thrust_truth = CoaxialDrone.mass * gravity_float - Fnet_truth
         print(f'thrust truth: {thrust_truth}')
         print(f'target z dot dot: {target_z_dot_dot}')
+
+        # Fly drone body:
         # CoaxialDrone.shape.body.apply_force_at_local_point((0,), (0, 0))  # arguments: (self._body, tuple(force), tuple(point))
         # cp.cpBodyApplyForceAtLocalPoint(self._body, tuple(force), tuple(point))
 
@@ -580,13 +596,13 @@ def main():
         z_acceleration_truth.append(acceleration_truth)
         z_dt.append(dt)
 
-        droneHUD.display(CoaxialDrone, time,
-                         Fnet_truth, thrust_truth,
+        droneHUD.display(CoaxialDrone, time, gravity_float,
+                         Fnet_truth, mg, thrust_truth,
                          velocity_truth, acceleration_truth, position_truth,
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 2.00 < time < 2.05:
+        if 20.00 < time < 20.05:
             print(f'z_actual: {z_position_truth}')
             print(f'Length of t_history: {len(t_history)}')
 
