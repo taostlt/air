@@ -22,28 +22,22 @@ class CoaxialCopter:
     def __init__(self,
                  name, space,
                  gravity_ref,
-                 K_m = 0.1,
                  K_f = 0.1,
-                 mass = 0.5,
-                 I_z = 0.2,
+                 I_x = 0.1,
+                 m = 1.0,
+                 l = 0.5,
                  ):
-        self.K_m = K_m
-        self.K_f = K_f
-        self.mass = mass
-        self.I_z = I_z
 
-        self.g = gravity_ref      # Gravity in pymunk also has a horizontal component.
-        print(f'The gravity is: {self.g}')
+        self.name = name
+        self.k_f = K_f
+        self.I_x = I_x
+        self.l = l
+        self.mass = m
         self.omega_1 = 0.0
         self.omega_2 = 0.0
-        self.name = name
-
-        self.z = 0.0
-        self.z_dot = 0.0
-        self.psi = 0.0
-        self.psi_dot = 0.0
-
-        # self.X = np.array([0.0, 0.0, 0.0, 0.0])
+        self.g = gravity_ref
+                          # z,   y,  phi, z_dot, y_dot, phi_dot
+        self.X = np.array([0.0, 0.0, 0.0,  0.0,0.0,0.0])
 
         # Create drone body
         self.shape = pymunk.Poly.create_box(None, size=(50, 10))
@@ -61,76 +55,113 @@ class CoaxialCopter:
         # space.add(self.shape, self.body, leg1, leg2)
         space.add(self.shape, self.body)
 
-    def set_rotors_angular_velocities(self, linear_acc, angular_acc):
-        term_1 = self.mass * (-linear_acc + self.g) / (2 * self.K_f)
-        term_1 = abs(term_1)     # This avoids a 'math domain' error when linear_acc > gravity means faster then falling.
-                                 # which should never happen unless props reverse to provide thrust downwards.
-        term_2 = self.I_z * angular_acc / (2 * self.K_m)
-        omega_1 = math.sqrt(term_1 + term_2)
-        omega_2 = math.sqrt(term_1 - term_2)
+    def set_rotors_angular_velocities(self, linear_acc):
+        # term_1 = self.mass * (-linear_acc + self.g) / (2 * self.K_f)
+        # term_1 = abs(term_1)     # This avoids a 'math domain' error when linear_acc > gravity means faster then falling.
+        #                          # which should never happen unless props reverse to provide thrust downwards.
+        # term_2 = self.I_z * angular_acc / (2 * self.K_m)
+        # omega_1 = math.sqrt(term_1 + term_2)
+        # omega_2 = math.sqrt(term_1 - term_2)
 
-        self.omega_1 = -omega_1
+        omega = math.sqrt(self.mass * (-linear_acc + self.g) / (2 * self.k_f))
+        self.omega_1 = omega_1
         self.omega_2 = omega_2
         return self.omega_1, self.omega_2
 
-    @property
-    def z_dot_dot(self):                     # This is z_dot_dot_total for system, including g.
-        f_1 = self.K_f * self.omega_1**2
-        f_2 = self.K_f * self.omega_2**2
-        f_g = self.mass * self.g
-        print('fg: ', f_g)
-        f_total = (f_1 + f_2) - f_g
-        print('f_total: ', f_total)
-        vertical_acceleration = f_total / self.mass
-        print(f'Vertical acc is: {vertical_acceleration}')
-        return vertical_acceleration
+    def get_thrust_and_moment(self):
+        f1 = self.k_f * self.omega_1 **2
+        f2 = self.k_f * self.omega_2 **2
+        c = f1 + f2
+        M_x = (f1 - f2) * self.l
+        return c, M_x
 
     @property
-    def psi_dot_dot(self):
-        cw_torque = self.K_m * self.omega_1 **2
-        ccw_torque = self.K_m * self.omega_2 **2
-        net_torque = cw_torque - ccw_torque
-        angular_acc = net_torque / self.I_z
+    def z_dot_dot(self):
+        c, M_x = self.get_thrust_and_moment()
+        phi = self.X[2]
+        a_z = self.g - c * math.cos(phi) / self.mass
+        return a_z
+
+    @property
+    def y_dot_dot(self):
+        c, M_x = self.get_thrust_and_moment()
+        phi = self.X[2]
+        a_y = c * math.sin(phi) / self.mass
+        return a_y
+
+    # @property
+    # def z_dot_dot(self):                     # This is z_dot_dot_total for system, including g.
+    #     f_1 = self.K_f * self.omega_1**2
+    #     f_2 = self.K_f * self.omega_2**2
+    #     f_g = self.mass * self.g
+    #     print('fg: ', f_g)
+    #     f_total = (f_1 + f_2) - f_g
+    #     print('f_total: ', f_total)
+    #     vertical_acceleration = f_total / self.mass
+    #     print(f'Vertical acc is: {vertical_acceleration}')
+    #     return vertical_acceleration
+
+    @property
+    def phi_dot_dot(self):
+        # cw_torque = self.K_m * self.omega_1 **2
+        # ccw_torque = self.K_m * self.omega_2 **2
+        # net_torque = cw_torque - ccw_torque
+        # angular_acc = net_torque / self.I_z
+        # return angular_acc
+        c, M_x = self.get_thrust_and_moment()
+        angular_acc = M_x / self.I_x
         return angular_acc
 
     def advance_state(self, dt):
         """Advances the state of the drone forward by dt seconds"""
+        # #
+        # # TODO
+        # #  Implement this method! Your implementation may look
+        # #  VERY similar to the uncontrolled version of this function.
+        # z_dot_dot = self.z_dot_dot
         #
-        # TODO
-        #  Implement this method! Your implementation may look
-        #  VERY similar to the uncontrolled version of this function.
-        z_dot_dot = self.z_dot_dot
+        # delta_z_dot = z_dot_dot * dt
+        # self.z_dot += delta_z_dot
+        #
+        # delta_z = self.z_dot * dt
+        # self.z += delta_z
+        # # print('z: ', self.z)
+        #
+        # # update psi state (see method "psi_dot_dot" implemented before)
+        # psi_dot_dot = self.psi_dot_dot
+        #
+        # delta_psi_dot = psi_dot_dot * dt
+        # self.psi_dot += delta_psi_dot
+        #
+        # # technically we should restrict psi so it's between
+        # # -pi and pi, but we're not going to worry about that now
+        # delta_psi = self.psi_dot * dt
+        # self.psi += delta_psi
 
-        delta_z_dot = z_dot_dot * dt
-        self.z_dot += delta_z_dot
+        X_dot = np.array([
+            self.X[3],
+            self.X[4],
+            self.X[5],
+            self.z_dot_dot,
+            self.y_dot_dot,
+            self.phi_dot_dot,
+        ])
 
-        delta_z = self.z_dot * dt
-        self.z += delta_z
-        # print('z: ', self.z)
+        self.X = self.X + X_dot * dt
+        return self.X
 
-        # update psi state (see method "psi_dot_dot" implemented before)
-        psi_dot_dot = self.psi_dot_dot
-
-        delta_psi_dot = psi_dot_dot * dt
-        self.psi_dot += delta_psi_dot
-
-        # technically we should restrict psi so it's between
-        # -pi and pi, but we're not going to worry about that now
-        delta_psi = self.psi_dot * dt
-        self.psi += delta_psi
-
-    def advance_state_uncontrolled(self, dt):
-        print('Advance State Uncontrolled.')
-        z_dot_dot = self.g
-        delta_z_dot = z_dot_dot * dt
-        self.z_dot = self.z_dot + delta_z_dot
-        # self.z_dot = round(self.z_dot, 2)
-        print(f'self.z_dot: {self.z_dot}')
-
-        delta_z = self.z_dot * dt
-        self.z = self.z + delta_z
-        # self.z = round(self.z, 2)
-        print(f'The z position is: {self.z}')
+    # def advance_state_uncontrolled(self, dt):
+    #     print('Advance State Uncontrolled.')
+    #     z_dot_dot = self.g
+    #     delta_z_dot = z_dot_dot * dt
+    #     self.z_dot = self.z_dot + delta_z_dot
+    #     # self.z_dot = round(self.z_dot, 2)
+    #     print(f'self.z_dot: {self.z_dot}')
+    #
+    #     delta_z = self.z_dot * dt
+    #     self.z = self.z + delta_z
+    #     # self.z = round(self.z, 2)
+    #     print(f'The z position is: {self.z}')
 
 class Experiment:
     def __init__(self):
@@ -563,7 +594,7 @@ def main():
         # CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
 
         # CoaxialDrone.advance_state(dt)
-        CoaxialDrone.advance_state_uncontrolled(dt)
+        CoaxialDrone.advance_state(dt)
         print(f'Velocity is: {CoaxialDrone.z_dot}')
 
         # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
