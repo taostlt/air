@@ -338,11 +338,11 @@ class HUD:
         columnWidth = 100          # How wide should each column be?
         y_vertical = 0             # Each row should start at the top of the column and advance downwards
 
-        print(f'The angular acceleration is: {CoaxialDrone.psi_dot_dot}')
+        print(f'The angular acceleration is: {CoaxialDrone.phi_dot_dot}')
 
         label_list = ['T+','g','mg','Thrust', 'Fnet', 'Velocity', 'Acc', 'Position', 'Loop', 'dt', 'Omega_1', "Omega_2", 'Ang_Acc']
         truth_list = [time, g, mg, thrust_truth, Fnet_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2, ang_acc_truth]
-        drone_list = [time, g, mg, thrust_truth, Fnet_truth, CoaxialDrone.z_dot, CoaxialDrone.z_dot_dot, CoaxialDrone.z, loop, dt, omega_1, omega_2, CoaxialDrone.psi_dot_dot]
+        drone_list = [time, g, mg, thrust_truth, Fnet_truth, CoaxialDrone.X[3], CoaxialDrone.z_dot_dot, CoaxialDrone.X[0], loop, dt, omega_1, omega_2, CoaxialDrone.phi_dot_dot]
 
         # Draw Orange Column background       "TEXT" (width) (row height) [background color]
         time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
@@ -549,7 +549,7 @@ def main():
         # #-----------------------------------------------------
 
         ang_acc_truth = CoaxialDrone.body.angular_velocity
-        ang_acc = CoaxialDrone.psi_dot_dot
+        ang_acc = CoaxialDrone.phi_dot_dot
 
         print('Omegas:')
         print(f'{CoaxialDrone.omega_1:0.3f} {CoaxialDrone.omega_2:0.3f}, vertical acc: {CoaxialDrone.z_dot_dot:0.3f}')
@@ -595,7 +595,7 @@ def main():
 
         # CoaxialDrone.advance_state(dt)
         CoaxialDrone.advance_state(dt)
-        print(f'Velocity is: {CoaxialDrone.z_dot}')
+        print(f'Velocity is: {CoaxialDrone.X[3]}')
 
         # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
         # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
@@ -625,7 +625,7 @@ def main():
         # CoaxialDrone.shape.body.apply_force_at_local_point((0,0),(0,0))
         # CoaxialDrone.shape.body.velocity_func = 200.0  ; we are not encouraged to set velocity directly. Just Force.
         t_history.append(time)
-        z_history.append(CoaxialDrone.z)
+        z_history.append(CoaxialDrone.X[0])
         z_position_truth.append(CoaxialDrone.shape.body.position[1])
         z_velocity_truth.append(CoaxialDrone.shape.body.velocity[1])
         z_acceleration_truth.append(acceleration_truth)
