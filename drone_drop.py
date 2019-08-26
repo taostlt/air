@@ -64,8 +64,8 @@ class CoaxialCopter:
         # omega_2 = math.sqrt(term_1 - term_2)
 
         omega = math.sqrt(self.mass * (-linear_acc + self.g) / (2 * self.k_f))
-        self.omega_1 = omega_1
-        self.omega_2 = omega_2
+        self.omega_1 = omega
+        self.omega_2 = omega
         return self.omega_1, self.omega_2
 
     def get_thrust_and_moment(self):
@@ -144,8 +144,7 @@ class CoaxialCopter:
             self.X[5],
             self.z_dot_dot,
             self.y_dot_dot,
-            self.phi_dot_dot,
-        ])
+            self.phi_dot_dot])
 
         self.X = self.X + X_dot * dt
         return self.X
@@ -162,6 +161,23 @@ class CoaxialCopter:
     #     self.z = self.z + delta_z
     #     # self.z = round(self.z, 2)
     #     print(f'The z position is: {self.z}')
+
+    def advance_state_uncontrolled(self, dt):
+        """Advances the state of the drone by dt seconds.
+        Note that this method assumes zero rotational speed
+        for both propellers."""
+
+        X_dot = np.array([
+            self.X[3],
+            self.X[4],
+            self.X[5],
+            self.g,
+            0.0,
+            0.0])
+
+        # Change in state will be
+        self.X = self.X + X_dot * dt
+        return self.X
 
 class Experiment:
     def __init__(self):
@@ -257,6 +273,10 @@ class Experiment:
         # This equation is my attempt at creating an equation that gets the drone to hover. target_z_dot_dot = -np.cos(time)*2 - 1
         # If I switch to uncontrolled_state(dt), does my graph agree?
         # https://www.tutorialspoint.com/python/python_matplotlib.htm shows how to create linspace with Pi
+
+    # 8/24/19
+    # Question: How do I integrate the linspace with the fly loop?
+
         pass
 
 class Ground:
@@ -412,6 +432,30 @@ class Test:
 
         return self.first + self.last
 
+def sineTest(CoaxialDrone, dt):
+    dt = 0.002
+    total_time = 4.0
+    t = np.linspace(0.0, total_time, int(total_time / dt))
+    z_path = 0.5 * np.cos(2 * t) - 0.5
+    z_dot_dot_path = -2.0 * np.cos(2 * t)
+
+    drone_state_history = CoaxialDrone.X
+    for i in range(t.shape[0] - 1):
+        CoaxialDrone.set_rotors_angular_velocities(z_dot_dot_path[i])
+        drone_state = CoaxialDrone.advance_state(dt)
+        drone_state_history = np.vstack((drone_state_history, drone_state))
+
+    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
+    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
+    plt.grid()
+    plt.title('Change in height').set_fontsize(20)
+    plt.xlabel('$t$ [sec]').set_fontsize(20)
+    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.legend(['planned path', 'executed path'], fontsize=18)
+    plt.show()
+
 def main():
     pygame.init()
 
@@ -429,8 +473,8 @@ def main():
 
     space = pymunk.Space()
     #space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly by default,
-    space.gravity = 0, -9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
-    j = 1                       # j is a unit vector to indicate direction (ie. khan academy "normal force elevator")
+    space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
+    j = -1                       # j is a unit vector to indicate direction (ie. khan academy "normal force elevator")
 
     gravity_ref = space.gravity[1]
     print(f'Gravity float: {gravity_ref}')
@@ -459,14 +503,16 @@ def main():
     linear_acc_desired = 0.0
     psi_acc_desired = 0.0
 
-    target_z = np.cos(time) - 1   # define target path outside of main fly loop.
-    target_z_dot_dot = -np.cos(time)
+    target_z = np.cos(time) - 1                  # define target path outside of main fly loop.
+    target_z_dot_dot = -np.cos(time)             # this is what the acceleration should be to generate the target_z
     # target = np.zeros(5)
     target_z_dot_dot_history = []
 
-    CoaxialDrone = CoaxialCopter('Alex', space, gravity_ref)                    # Create drone that can fly
+    CoaxialDrone = CoaxialCopter('Alex', space, gravity_ref)       # Create drone that can fly
     loop = 0                                                       # Initialize frame counter
     dt = 0                                                         # Initialize steps
+
+    sineTest(CoaxialDrone, dt)
 
     while True:
         for event in pygame.event.get():
@@ -593,8 +639,8 @@ def main():
 
         # CoaxialDrone.set_rotors_angular_velocities(target_z_dot_dot, 0.0)
 
+        CoaxialDrone.advance_state_uncontrolled(dt)
         # CoaxialDrone.advance_state(dt)
-        CoaxialDrone.advance_state(dt)
         print(f'Velocity is: {CoaxialDrone.X[3]}')
 
         # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
@@ -606,15 +652,14 @@ def main():
 
         mg = CoaxialDrone.mass * gravity_ref
         ma = CoaxialDrone.z_dot_dot * CoaxialDrone.mass      # The equation for z_dot_dot includes mg and Ftotal.
-
         thrust_truth = ma
         print(f'Coaxial drone acceleration is: {CoaxialDrone.z_dot_dot}')
 
         print(f'Fnet_truth = {thrust_truth}')
 
         Fnet_truth = mg * j - ma * j
-        print(f'Fnet_truth = {Fnet_truth}')
 
+        print(f'Fnet_truth = {Fnet_truth}')
         print(f'thrust truth: {thrust_truth}')
         print(f'target z dot dot: {target_z_dot_dot}')
 
