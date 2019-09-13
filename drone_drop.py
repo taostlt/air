@@ -37,7 +37,7 @@ class CoaxialCopter:
         self.omega_2 = 0.0
         self.g = gravity_ref
                           # z,   y,  phi, z_dot, y_dot, phi_dot
-        self.X = np.array([0.0, 0.0, 0.0,  0.0,0.0,0.0])
+        self.X = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         # Create drone body
         self.shape = pymunk.Poly.create_box(None, size=(50, 10))
@@ -289,11 +289,11 @@ class Ground:
         space.add(self.shape, self.body)
 
 class Card(pygame.sprite.Sprite):
-    # For color codes | http://www.tayloredmktg.com/rgb/
+    # For color codes | https://python-graph-gallery.com/196-select-one-color-with-matplotlib/
     def __init__(self, screen, font,
                  card_text, card_text_x, card_text_y, card_width, card_height,
                  card_color = THECOLORS["royalblue"], color_text = THECOLORS["white"]):
-        super(Card, self).__init__()
+        # super(Card, self).__init__()
 
         offset_x, offset_y = 5, 5  # padding for cards around the edges
         self.surf = pygame.Surface((card_width + offset_x, card_height + offset_y))
@@ -304,6 +304,7 @@ class Card(pygame.sprite.Sprite):
         screen.blit(self.surf, (card_text_x - offset_x, card_text_y - offset_y))
         screen.blit(font.render(card_text, True, (color_text)), (card_text_x, card_text_y))
         # screen.blit(font.render(dynamic_text, True, (color_text)), (dynamic_text_x, dynamic_text_y))
+
     def id(self):
         print(self.card_text)
 
@@ -432,29 +433,29 @@ class Test:
 
         return self.first + self.last
 
-def sineTest(CoaxialDrone, dt):
-    dt = 0.002
-    total_time = 4.0
-    t = np.linspace(0.0, total_time, int(total_time / dt))
-    z_path = 0.5 * np.cos(2 * t) - 0.5
-    z_dot_dot_path = -2.0 * np.cos(2 * t)
-
-    drone_state_history = CoaxialDrone.X
-    for i in range(t.shape[0] - 1):
-        CoaxialDrone.set_rotors_angular_velocities(z_dot_dot_path[i])
-        drone_state = CoaxialDrone.advance_state(dt)
-        drone_state_history = np.vstack((drone_state_history, drone_state))
-
-    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
-    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
-    plt.grid()
-    plt.title('Change in height').set_fontsize(20)
-    plt.xlabel('$t$ [sec]').set_fontsize(20)
-    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    plt.legend(['planned path', 'executed path'], fontsize=18)
-    plt.show()
+# def sineTest(CoaxialDrone, dt):
+#     dt = 0.002
+#     total_time = 4.0
+#     t = np.linspace(0.0, total_time, int(total_time / dt))
+#     z_path = 0.5 * np.cos(2 * t) - 0.5
+#     z_dot_dot_path = -2.0 * np.cos(2 * t)
+#
+#     drone_state_history = CoaxialDrone.X
+#     for i in range(t.shape[0] - 1):
+#         CoaxialDrone.set_rotors_angular_velocities(z_dot_dot_path[i])
+#         drone_state = CoaxialDrone.advance_state(dt)
+#         drone_state_history = np.vstack((drone_state_history, drone_state))
+#
+#     plt.plot(t, z_path, linestyle='-', marker='o', color='red')
+#     plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
+#     plt.grid()
+#     plt.title('Change in height').set_fontsize(20)
+#     plt.xlabel('$t$ [sec]').set_fontsize(20)
+#     plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
+#     plt.xticks(fontsize=14)
+#     plt.yticks(fontsize=14)
+#     plt.legend(['planned path', 'executed path'], fontsize=18)
+#     plt.show()
 
 def main():
     pygame.init()
@@ -466,6 +467,7 @@ def main():
 
     # Clock
     start_ticks = pygame.time.get_ticks()  # starter ticks
+    print(f'Start ticks: {start_ticks}')
     clock = pygame.time.Clock()
     pygame.time.set_timer(pygame.USEREVENT, 1000)
 
@@ -512,7 +514,7 @@ def main():
     loop = 0                                                       # Initialize frame counter
     dt = 0                                                         # Initialize steps
 
-    sineTest(CoaxialDrone, dt)
+    # sineTest(CoaxialDrone, dt)
 
     while True:
         for event in pygame.event.get():
@@ -570,6 +572,8 @@ def main():
         loop += 1                      # loop is total number of frames
         dt = time / loop               # The amount of time it takes for each frame, time needed per loop
                                        # dt is the time required to increment each step or frame.
+       # dt = 0.2
+        # dt = space.step(1/60.0)
 
         # stable_omega_1, stable_omega_2 = CoaxialDrone.set_rotors_angular_velocities(linear_acc_desired, psi_acc_desired)
         # print(f'\n omega_1: {stable_omega_1:0.4f} , omega_2: {stable_omega_2:0.3f}')
@@ -682,7 +686,7 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 20.00 < time < 20.05:
+        if 40.00 < time < 40.05:
             print(f'z_actual: {z_position_truth}')
             print(f'Length of t_history: {len(t_history)}')
 
