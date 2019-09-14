@@ -474,8 +474,8 @@ def main():
     draw_options = DrawOptions(screen)
 
     space = pymunk.Space()
-    #space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly by default,
-    space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
+    space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly by default,
+    # space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
     j = -1                       # j is a unit vector to indicate direction (ie. khan academy "normal force elevator")
 
     gravity_ref = space.gravity[1]
@@ -515,6 +515,26 @@ def main():
     dt = 0                                                         # Initialize steps
 
     # sineTest(CoaxialDrone, dt)
+
+    #  --------------------------------
+    # BENCHMARK D: This produces the same chart as our homework for uncontrolled.
+    # 3.Uncontrolled 2D Drone SOLUTION
+    #
+    # Z_history = []
+    # Y_history = []
+    # dt = 0.2
+    # CoaxialDrone.X[4] = 1.0
+    # for _ in range(100):
+    #     Z_history.append(CoaxialDrone.X[0])
+    #     Y_history.append(CoaxialDrone.X[1])
+    #     CoaxialDrone.advance_state_uncontrolled(dt)
+    #
+    # # plt.plot(Y_history, Z_history )
+    # plt.plot(Y_history)  # blue
+    # plt.plot(Z_history)  # yellow
+    # # plt.gca().invert_yaxis()
+    # plt.show()
+    # ------------------------------------------------
 
     while True:
         for event in pygame.event.get():
@@ -613,7 +633,7 @@ def main():
         velocity_truth = CoaxialDrone.shape.body.velocity * j                     # Velocity and Position Vectors are parsed in Rounded fnc.
 
         # Detect Drone's position Externally (Ground Truth)
-        position_truth = CoaxialDrone.shape.body.position * j                  # Vec2d(tuple) where position[1] is z height.
+        position_truth = CoaxialDrone.shape.body.position * j                     # Vec2d(tuple) where position[1] is z height.
 
         # Get omega values
         omega_1, omega_2 = CoaxialDrone.omega_1, CoaxialDrone.omega_2
@@ -649,13 +669,13 @@ def main():
 
         # Fnet = ma, F = m(g - a), m*g - m*a.   g = space.gravity = (0, 9.8)
         # Fnet_truth =  CoaxialDrone.mass * space.gravity[1] - CoaxialDrone.mass * drone.shape.acceleration?
-        #                                                   This acc needs to be from the props, not gravity
+        #                                                      This acc needs to be from the props, not gravity
         # Constant velocity has no net force. Fnet = 0. Elevator falling
         # Khan Academy: No acceleration => no net Force
         # Thrust is Fnormal. The force offsetting gravity is Fn, Fthrust
 
         mg = CoaxialDrone.mass * gravity_ref
-        ma = CoaxialDrone.z_dot_dot * CoaxialDrone.mass      # The equation for z_dot_dot includes mg and Ftotal.
+        ma = CoaxialDrone.z_dot_dot * CoaxialDrone.mass            # The equation for z_dot_dot includes mg and Ftotal.
         thrust_truth = ma
         print(f'Coaxial drone acceleration is: {CoaxialDrone.z_dot_dot}')
 
@@ -686,7 +706,8 @@ def main():
                          loop, dt, omega_1, omega_2,
                          ang_acc_truth)
 
-        if 40.00 < time < 40.05:
+
+        if 10.00 < time < 10.05:
             print(f'z_actual: {z_position_truth}')
             print(f'Length of t_history: {len(t_history)}')
 
@@ -767,7 +788,7 @@ def main():
             # plt.xlabel("Time (seconds)")
             # plt.legend(["Time","Z Actual", "Z Drone", "target z dot dot"])
             # plt.gca().invert_yaxis()
-            plt.show()
+            # plt.show()
             sys.exit(0)
 
         pygame.display.update()
