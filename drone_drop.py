@@ -457,6 +457,43 @@ class Test:
 #     plt.legend(['planned path', 'executed path'], fontsize=18)
 #     plt.show()
 
+def benchMark_5(space, gravity_ref):
+    # Bench mark 5. Controlling a 2D Quad SOLUTION
+    total_time = 3.0
+    dt = 0.002
+    # dt = 0.18
+    t = np.linspace(0.0, total_time, int(total_time / dt))
+
+    z_path = 0.5 * np.cos(2 * t) - 0.5
+    z_dot_dot_path = -2.0 * np.cos(2 * t)
+    print(z_dot_dot_path)
+    print(len(z_dot_dot_path))
+
+    drone = CoaxialCopter('New', space, gravity_ref)
+
+    drone_state_history = drone.X
+
+    for i in range(t.shape[0] - 1):
+        # setting the propeller velocities
+        drone.set_rotors_angular_velocities(z_dot_dot_path[i])
+
+        # calculating the new state vector
+        drone_state = drone.advance_state(dt)
+
+        # generate a history of vertical positions for drone
+        drone_state_history = np.vstack((drone_state_history, drone_state))
+
+    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
+    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
+    plt.grid()
+    plt.title('Change in height').set_fontsize(20)
+    plt.xlabel('$t$ [sec]').set_fontsize(20)
+    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.legend(['planned path', 'executed path'], fontsize=18)
+    plt.show()
+
 def main():
     pygame.init()
 
@@ -536,41 +573,8 @@ def main():
     # plt.show()
     # ------------------------------------------------
 
-    # Bench mark 5. Controlling a 2D Quad SOLUTION
-    total_time = 3.0
-    dt = 0.002
-    # dt = 0.18
-    t = np.linspace(0.0, total_time, int(total_time / dt))
+    benchMark_5(space, gravity_ref)
 
-    z_path = 0.5 * np.cos(2 * t) - 0.5
-    z_dot_dot_path = -2.0 * np.cos(2 * t)
-    print(z_dot_dot_path)
-    print(len(z_dot_dot_path))
-
-    drone = CoaxialCopter('New', space, gravity_ref)
-
-    drone_state_history = drone.X
-
-    for i in range(t.shape[0] - 1):
-        # setting the propeller velocities
-        drone.set_rotors_angular_velocities(z_dot_dot_path[i])
-
-        # calculating the new state vector
-        drone_state = drone.advance_state(dt)
-
-        # generate a history of vertical positions for drone
-        drone_state_history = np.vstack((drone_state_history, drone_state))
-
-    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
-    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
-    plt.grid()
-    plt.title('Change in height').set_fontsize(20)
-    plt.xlabel('$t$ [sec]').set_fontsize(20)
-    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    plt.legend(['planned path', 'executed path'], fontsize=18)
-    plt.show()
 
     while True:
         for event in pygame.event.get():
