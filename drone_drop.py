@@ -474,7 +474,7 @@ def main():
     draw_options = DrawOptions(screen)
 
     space = pymunk.Space()
-    space.gravity = 0, -9.800  # Pymunk defines gravity incorrectly by default,
+    space.gravity = 0, 9.800  # Pymunk defines gravity incorrectly by default,
     # space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
     j = -1                       # j is a unit vector to indicate direction (ie. khan academy "normal force elevator")
 
