@@ -575,7 +575,6 @@ def main():
 
     benchMark_5(space, gravity_ref)
 
-
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
