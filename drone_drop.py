@@ -457,20 +457,29 @@ class Test:
 #     plt.legend(['planned path', 'executed path'], fontsize=18)
 #     plt.show()
 
+def display_benchmark(t, z_path, drone_state_history):
+    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
+    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
+    plt.grid()
+    plt.title('Change in height').set_fontsize(20)
+    plt.xlabel('$t$ [sec]').set_fontsize(20)
+    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.legend(['planned path', 'executed path'], fontsize=18)
+    plt.show()
+
 def benchMark_5(space, gravity_ref):
     # Bench mark 5. Controlling a 2D Quad SOLUTION
     total_time = 3.0
     dt = 0.002
     # dt = 0.18
     t = np.linspace(0.0, total_time, int(total_time / dt))
-
     z_path = 0.5 * np.cos(2 * t) - 0.5
     z_dot_dot_path = -2.0 * np.cos(2 * t)
     print(z_dot_dot_path)
     print(len(z_dot_dot_path))
-
     drone = CoaxialCopter('New', space, gravity_ref)
-
     drone_state_history = drone.X
 
     for i in range(t.shape[0] - 1):
@@ -483,16 +492,9 @@ def benchMark_5(space, gravity_ref):
         # generate a history of vertical positions for drone
         drone_state_history = np.vstack((drone_state_history, drone_state))
 
-    plt.plot(t, z_path, linestyle='-', marker='o', color='red')
-    plt.plot(t, drone_state_history[:, 0], linestyle='-', color='blue')
-    plt.grid()
-    plt.title('Change in height').set_fontsize(20)
-    plt.xlabel('$t$ [sec]').set_fontsize(20)
-    plt.ylabel('$z-z_0$ [$m$]').set_fontsize(20)
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    plt.legend(['planned path', 'executed path'], fontsize=18)
-    plt.show()
+    display_benchmark(t, z_path, drone_state_history)
+
+
 
 def main():
     pygame.init()
@@ -505,6 +507,11 @@ def main():
     # Clock
     start_ticks = pygame.time.get_ticks()  # starter ticks
     print(f'Start ticks: {start_ticks}')
+
+    # Calculate Time in Seconds
+    seconds = (pygame.time.get_ticks() - start_ticks) / 1000
+    time = float(seconds)
+
     clock = pygame.time.Clock()
     pygame.time.set_timer(pygame.USEREVENT, 1000)
 
@@ -518,9 +525,6 @@ def main():
     gravity_ref = space.gravity[1]
     print(f'Gravity float: {gravity_ref}')
 
-    # Calculate Time in Seconds
-    seconds = (pygame.time.get_ticks() - start_ticks) / 1000
-    time = float(seconds)
     droneHUD = HUD(screen, font)
 
     x = random.randint(120, 380)
@@ -574,6 +578,7 @@ def main():
     # ------------------------------------------------
 
     benchMark_5(space, gravity_ref)
+
 
     while True:
         for event in pygame.event.get():
