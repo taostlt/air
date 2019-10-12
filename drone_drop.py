@@ -365,7 +365,7 @@ class HUD:
         truth_list = [time, g, mg, thrust_truth, Fnet_truth, velocity[1], acceleration, position[1], loop, dt, omega_1, omega_2, ang_acc_truth]
         drone_list = [time, g, mg, thrust_truth, Fnet_truth, CoaxialDrone.X[3], CoaxialDrone.z_dot_dot, CoaxialDrone.X[0], loop, dt, omega_1, omega_2, CoaxialDrone.phi_dot_dot]
 
-        # Draw Orange Column background        "TEXT"(width)(row height)                    [background color]
+        # Draw Orange Column background       "TEXT" (width) (row height) [background color]
         time_card = Card(self.screen, self.font, "", 10, 35, 85, len(label_list)*rowHeight, THECOLORS['goldenrod'])
 
         # Draw Blue column headers with text and background      (Xorg Yorg Width, Height)
@@ -470,43 +470,30 @@ def display_benchmark(t, z_path, drone_state_history):
     plt.show()
 
 def benchMark_5(space, gravity_ref):
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit(0)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                print('ESCAPEKEY')
-                sys.exit(0)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-                sys.exit(0)
-            # Bench mark 5. Controlling a 2D Quad SOLUTION
+    # Bench mark 5. Controlling a 2D Quad SOLUTION
+    total_time = 3.0
+    dt = 0.002
+    # dt = 0.18
+    t = np.linspace(0.0, total_time, int(total_time / dt))
+    z_path = 0.5 * np.cos(2 * t) - 0.5
+    z_dot_dot_path = -2.0 * np.cos(2 * t)
+    print(z_dot_dot_path)
+    print(len(z_dot_dot_path))
+    drone = CoaxialCopter('New', space, gravity_ref)
+    drone_state_history = drone.X
 
-            total_time = 3.0
-            start_ticks = pygame.time.get_ticks()                       # starter ticks
-            seconds = (pygame.time.get_ticks() - start_ticks) / 1000
-            time = float(seconds)
-            dt = 0.002
-            # dt = 0.18
+    for i in range(t.shape[0] - 1):
+        # setting the propeller velocities
+        drone.set_rotors_angular_velocities(z_dot_dot_path[i])
 
-            t = np.linspace(0.0, total_time, int(total_time / dt))
-            z_path = 0.5 * np.cos(2 * t) - 0.5
-            z_dot_dot_path = -2.0 * np.cos(2 * t)
-            print(z_dot_dot_path)
-            print(len(z_dot_dot_path))
-            drone = CoaxialCopter('New', space, gravity_ref)
-            drone_state_history = drone.X
+        # calculating the new state vector
+        drone_state = drone.advance_state(dt)
 
-            for i in range(t.shape[0] - 1):
-                # setting the propeller velocities
-                drone.set_rotors_angular_velocities(z_dot_dot_path[i])
+        # generate a history of vertical positions for drone
+        drone_state_history = np.vstack((drone_state_history, drone_state))
 
-                # calculating the new state vector
-                drone_state = drone.advance_state(dt)
+    display_benchmark(t, z_path, drone_state_history)
 
-                # generate a history of vertical positions for drone
-                drone_state_history = np.vstack((drone_state_history, drone_state))
-
-            display_benchmark(t, z_path, drone_state_history)
 
 
 def main():
@@ -590,11 +577,10 @@ def main():
     # plt.show()
     # ------------------------------------------------
 
+    benchMark_5(space, gravity_ref)
+
 
     while True:
-
-        benchMark_5(space, gravity_ref)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit(0)
