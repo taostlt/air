@@ -235,8 +235,8 @@ def main():
     loop_count = 0
     time = 0
     #                               #  loop, time, z,   z_dot_dot, z_path_actual
-    # current_state         = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
-    # current_state_history = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
+    # system_state         = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
+    # system_state_history = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
 
     # a = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
     # b = a[:2, 1:3]    # [2, 3 ]
@@ -286,7 +286,11 @@ def main():
     dt_average = np.array([0.0])
     dt_average_history = np.array([0.0])
 
+                        #     time,  z_target, z_actual, z_acc
+    system_state = np.array([ 0.0,  0.0,       0.0,      0.0])
+    system_state_history = np.array([ 0.0,  0.0,       0.0,      0.0])
     #---------------------
+
     while True:
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -333,61 +337,53 @@ def main():
         z_path_target = 0.5 * np.cos(2 * time) - 0.5
         z_dot_dot = -2.0 * np.cos(2 * time)
         print(f'z_dot_dot: {z_dot_dot}')
-
-      #  z_path_target_history = np.vstack((z_path_target_history, z_path_target))
-        # current_state[0] = loop_count
-        # current_state[1] = time
-        # current_state[2] = z_path_target
-        # current_state[3] = z_dot_dot
-        # current_state[4] = z_path_actual
+        z_path_target_history = np.vstack((z_path_target_history, z_path_target))
 
         drone.set_rotors_angular_velocities(z_dot_dot)
         drone_state = drone.advance_state(dt)
+        drone_state_history = np.vstack((drone_state_history, drone_state))            # This tracks all variables in state
 
         time_state[0] = time
+        time_state_history = np.vstack((time_state_history, time_state))               # This tracks time
 
-        drone_state_history = np.vstack((drone_state_history, drone_state))
-        time_state_history = np.vstack((time_state_history, time_state))
-        print(f'Loop Count: \n {loop_count}')
-        dt_state = time_state_history[loop_count] - time_state_history[loop_count-1]
-        print(f'dt state: {dt_state}')
-        dt_state_history = np.vstack((dt_state_history, dt_state))
 
-        dt_average[0] = time/loop_count         # same as 1 / (loop_count/time)
-        print(f'dt average: {np.round(dt_average, 3)}')
-        dt_average_history = np.vstack((dt_average_history, dt_average))
-
-        if loop_count > 6400:
-            print(f'dt state history: {dt_state_history}')
-            plt.plot(dt_state_history[:,0], color="yellow")
-            plt.plot(dt_average_history[:,0], color="blue")
-            plt.legend(["dt instances", "dt average history (total time / total cycles)"])
-            # plt.legend(['planned path', 'executed path'], fontsize=18)
-            plt.title("dt over time")
-            plt.show()
-            print('AIR')
-            sys.exit(0)
-
-        # if time > 2.9999:
-        #     z_position_actual = drone_state_history[:,0]
-        #     # print(f'Z POSITION ACTUAL: \n {z_position_actual}')
-        #     # plt.plot(time_state_history, z_position_actual, label = "z position actual", color ="red")
-        #     # plt.plot(time_state_history, time_state_history, label="time state history", color = "black")
-        #     plt.title('z path actual')
-        #     # plt.legend()
-        #     # plt.show()
-        #
-        #     # plt.figure(figsize=(13, 4))
-        #     # row = 1
-        #     # column = 1
-        #     # plt.subplot(row, column, 1)     # (row, column, index)
-        #     # plt.plot(time, current_state_history[:,0], color="red")
-        #     # # plt.plot(s, color="blue")
-        #     # plt.plot(current_state_history[:,1],current_state_history[:,0], color="red")
-        #
-        #     # plt.plot(current_state_history, color="orange")
-        #     # plt.plot(t, current_state_history[1:,0],current_state_history[1:,1] ,color="blue")
+        # dt_state = time_state_history[loop_count] - time_state_history[loop_count-1]
+        # dt_state_history = np.vstack((dt_state_history, dt_state))
+        # dt_average[0] = time/loop_count                                                # same as 1 / (loop_count/time)
+        # print(f'dt average: {np.round(dt_average, 3)}')                                # We divide total loops / total time
+        # dt_average_history = np.vstack((dt_average_history, dt_average))     # This will plot dt (instances and average dt)
+        # if loop_count > 6400:
+        #     print(f'dt state history: {dt_state_history}')
+        #     plt.plot(dt_state_history[:,0], color="yellow")
+        #     plt.plot(dt_average_history[:,0], color="blue")
+        #     plt.legend(["dt instances", "dt average history (total time / total cycles)"])
+        #     # plt.legend(['planned path', 'executed path'], fontsize=18)
+        #     plt.title("dt over time")
+        #     plt.show()
         #     sys.exit(0)
+
+        if time > 2.9999:
+            print(f'z path target history:\n {z_path_target_history[:, 0]}')
+            print('Yo')
+            z_position_actual = drone_state_history[:,0]
+            # print(f'Z POSITION ACTUAL: \n {z_position_actual}')
+            # plt.plot(time_state_history, z_position_actual, label = "z position actual", color ="red")
+            # plt.plot(time_state_history, z_path_target_history, label="z target", color = "black")
+            # plt.title('z path actual')
+            # plt.legend()
+            # plt.show()
+
+            plt.figure(figsize=(10,5))
+            row = 1
+            column = 2
+            plt.subplot(row, column, 1)  # (row, column, index)
+            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='red')
+
+            plt.subplot(row, column, 2)
+            plt.plot(z_position_actual, linestyle='-.', color='blue')
+
+            plt.show()
+            sys.exit(0)
 
         pygame.display.flip()
 
