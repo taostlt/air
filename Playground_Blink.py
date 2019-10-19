@@ -359,8 +359,8 @@ def main():
 
         if loop_count > 6400:
             print(f'dt state history: {dt_state_history}')
-            plt.plot(dt_state_history[:,0], color="blue")
-            plt.plot(dt_average_history[:,0], color="brown")
+            plt.plot(dt_state_history[:,0], color="yellow")
+            plt.plot(dt_average_history[:,0], color="blue")
             plt.legend(["dt instances", "dt average history (total time / total cycles)"])
             # plt.legend(['planned path', 'executed path'], fontsize=18)
             plt.title("dt over time")
