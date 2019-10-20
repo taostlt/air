@@ -225,7 +225,7 @@ def main():
     image = pygame.image.load(r'/home/frank/Pictures/Amazon_Response_By_Seller.png')
     # mySwitch = Switch()
     name = 'Alex'
-    dt = 0.002  # from homework
+    # dt = 0.002  # from homework
 
     # myCard = Card(screen, font,str(space.step(1/60.0)), 300,300, 20,20, THECOLORS["royalblue"],THECOLORS["white"])
 
@@ -258,8 +258,8 @@ def main():
 
     z_path_target_history = np.array([0.0])
 
-    total_time = 3.0
-    dt = 0.02
+    total_time = 23.0
+    dt = 0.002
     drone2 = CoaxialCopter("2", space, gravity_ref)
     t = np.linspace(0.0, total_time, int(total_time/ dt))
     drone2_state_history = drone2.X
@@ -335,9 +335,12 @@ def main():
         # print(f't: {t.shape}')
 
         z_path_target = 0.5 * np.cos(2 * time) - 0.5
+        print(f'z_path_target: \n {z_path_target}')
+
         z_dot_dot = -2.0 * np.cos(2 * time)
         print(f'z_dot_dot: {z_dot_dot}')
         z_path_target_history = np.vstack((z_path_target_history, z_path_target))
+        print(f'z path target history:\n {np.round(z_path_target_history[loop_count, 0], 2)}')
 
         drone.set_rotors_angular_velocities(z_dot_dot)
         drone_state = drone.advance_state(dt)
@@ -345,7 +348,6 @@ def main():
 
         time_state[0] = time
         time_state_history = np.vstack((time_state_history, time_state))               # This tracks time
-
 
         # dt_state = time_state_history[loop_count] - time_state_history[loop_count-1]
         # dt_state_history = np.vstack((dt_state_history, dt_state))
@@ -362,9 +364,8 @@ def main():
         #     plt.show()
         #     sys.exit(0)
 
-        if time > 2.9999:
+        if time > 20.9999:
             print(f'z path target history:\n {z_path_target_history[:, 0]}')
-            print('Yo')
             z_position_actual = drone_state_history[:,0]
             # print(f'Z POSITION ACTUAL: \n {z_position_actual}')
             # plt.plot(time_state_history, z_position_actual, label = "z position actual", color ="red")
@@ -377,10 +378,10 @@ def main():
             row = 1
             column = 2
             plt.subplot(row, column, 1)  # (row, column, index)
-            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='red')
+            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='blue')
 
             plt.subplot(row, column, 2)
-            plt.plot(z_position_actual, linestyle='-.', color='blue')
+            plt.plot(time_state_history, z_position_actual, linestyle='-', color='red')
 
             plt.show()
             sys.exit(0)
