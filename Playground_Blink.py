@@ -256,10 +256,9 @@ def main():
  #    plt.plot(y, color="red")
  #    plt.show()
 
-    z_path_target_history = np.array([0.0])
-
-    total_time = 23.0
+    total_time = 20.0
     dt = 0.002
+
     drone2 = CoaxialCopter("2", space, gravity_ref)
     t = np.linspace(0.0, total_time, int(total_time/ dt))
     drone2_state_history = drone2.X
@@ -278,6 +277,8 @@ def main():
     # plt.show()
 
     drone = CoaxialCopter(name, space, gravity_ref)
+    z_path_target_history = np.array([0.0])
+
     drone_state_history = drone.X
     time_state = np.array([0.0])
     time_state_history = np.array([0.0])
@@ -286,9 +287,9 @@ def main():
     dt_average = np.array([0.0])
     dt_average_history = np.array([0.0])
 
-                        #     time,  z_target, z_actual, z_acc
-    system_state = np.array([ 0.0,  0.0,       0.0,      0.0])
-    system_state_history = np.array([ 0.0,  0.0,       0.0,      0.0])
+                               #     time,  z_target, z_actual, z_acc,  error (z_target-z_actual)
+    system_state         = np.array([ 0.0,  0.0,       0.0,     0.0,   0.0])
+    system_state_history = np.array([ 0.0,  0.0,       0.0,     0.0,   0.0])
     #---------------------
 
     while True:
@@ -349,6 +350,11 @@ def main():
         time_state[0] = time
         time_state_history = np.vstack((time_state_history, time_state))               # This tracks time
 
+        z_path_actual = drone.X[0]
+        system_state[4] = z_path_target - z_path_actual * j                               # Store error
+        system_state_history = np.vstack((system_state_history, system_state))
+
+                     # Turn dt average off and on here:
         # dt_state = time_state_history[loop_count] - time_state_history[loop_count-1]
         # dt_state_history = np.vstack((dt_state_history, dt_state))
         # dt_average[0] = time/loop_count                                                # same as 1 / (loop_count/time)
@@ -366,22 +372,25 @@ def main():
 
         if time > 20.9999:
             print(f'z path target history:\n {z_path_target_history[:, 0]}')
-            z_position_actual = drone_state_history[:,0]
-            # print(f'Z POSITION ACTUAL: \n {z_position_actual}')
-            # plt.plot(time_state_history, z_position_actual, label = "z position actual", color ="red")
+            z_target_actual = drone_state_history[:,0]
+            # print(f'Z POSITION ACTUAL: \n {z_target_actual}')
+            # plt.plot(time_state_history, z_target_actual, label = "z position actual", color ="red")
             # plt.plot(time_state_history, z_path_target_history, label="z target", color = "black")
             # plt.title('z path actual')
             # plt.legend()
             # plt.show()
 
-            plt.figure(figsize=(10,5))
+            plt.figure(figsize=(15,5))
             row = 1
-            column = 2
+            column = 3
             plt.subplot(row, column, 1)  # (row, column, index)
-            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='blue')
+            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='green')
 
             plt.subplot(row, column, 2)
-            plt.plot(time_state_history, z_position_actual, linestyle='-', color='red')
+            plt.plot(time_state_history, drone_state_history[:,0], linestyle='-', color='red')
+
+            plt.subplot(row, column, 3)
+            plt.plot(time_state_history, system_state_history[:, 4], linestyle='-', color='blue')
 
             plt.show()
             sys.exit(0)
