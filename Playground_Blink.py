@@ -351,7 +351,7 @@ def main():
         time_state_history = np.vstack((time_state_history, time_state))               # This tracks time
 
         z_path_actual = drone.X[0]
-        system_state[4] = z_path_target - z_path_actual * j                               # Store error
+        system_state[4] = (z_path_target - z_path_actual) * j                               # Store error
         system_state_history = np.vstack((system_state_history, system_state))
 
                      # Turn dt average off and on here:
