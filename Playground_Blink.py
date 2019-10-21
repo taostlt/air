@@ -256,7 +256,7 @@ def main():
  #    plt.plot(y, color="red")
  #    plt.show()
 
-    total_time = 20.0
+    total_time = 5.0
     dt = 0.002
 
     drone2 = CoaxialCopter("2", space, gravity_ref)
@@ -370,7 +370,7 @@ def main():
         #     plt.show()
         #     sys.exit(0)
 
-        if time > 20.9999:
+        if time > 5.9999:
             print(f'z path target history:\n {z_path_target_history[:, 0]}')
             z_target_actual = drone_state_history[:,0]
             # print(f'Z POSITION ACTUAL: \n {z_target_actual}')
@@ -384,13 +384,16 @@ def main():
             row = 1
             column = 3
             plt.subplot(row, column, 1)  # (row, column, index)
-            plt.plot(time_state_history, z_path_target_history[:,0], linestyle='-', color='green')
+            plt.plot(time_state_history, z_path_target_history[:,0], label='Target z', linestyle='-', color='green')
+            plt.legend()
 
             plt.subplot(row, column, 2)
-            plt.plot(time_state_history, drone_state_history[:,0], linestyle='-', color='red')
+            plt.plot(time_state_history, drone_state_history[:,0], label='Actual z', linestyle='-', color='red')
+            plt.legend()
 
             plt.subplot(row, column, 3)
-            plt.plot(time_state_history, system_state_history[:, 4], linestyle='-', color='blue')
+            plt.plot(time_state_history, system_state_history[:, 4], label='Error', linestyle='-', color='blue')
+            plt.legend()
 
             plt.show()
             sys.exit(0)
