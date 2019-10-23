@@ -18,9 +18,6 @@ import plotting
 
 import pymunk
 
-class Test:
-    def clear():
-        screen.fill((255, 255, 255))
 
 class Switch:
     def __init__(self):
@@ -50,17 +47,6 @@ class Card(pygame.sprite.Sprite):
         screen.blit(self.surf, (card_text_x - offset_x, card_text_y - offset_y))
         screen.blit(font.render(card_text, True, (color_text)), (card_text_x, card_text_y))
         # screen.blit(font.render(dynamic_text, True, (color_text)), (dynamic_text_x, dynamic_text_y))
-
-class Ground:
-        def __init__(self, space, z_position):
-            self.groundHeight = z_position
-            self.body = pymunk.Body(0, 0, body_type=pymunk.Body.STATIC)
-            width = 600
-            self.shape = pymunk.Poly.create_box(self.body, (width, 50))
-            # self.shape.body.position = (width//2, 144.129925)
-            self.shape.body.position = (width // 2, self.groundHeight)
-            space.add(self.shape, self.body)
-            # print("I JUST CREATED GROUND.")
 
 class CoaxialCopter:
     X: object
@@ -213,18 +199,6 @@ class CoaxialCopter:
         self.X = self.X + X_dot * dt
         return self.X
 
-class PController:
-    def __init__(self, k_p, m):
-        self.k_p = k_p
-        self.vehicle_mass = m
-        self.g = -9.81
-
-    def thrust_control(self, z_target, z_actual):
-        err = z_target - z_actual
-        u_bar = self.k_p * err
-        u = self.vehicle_mass * (self.g - u_bar)
-        return u
-
 def main():
     pygame.init()
     pygame.display.set_caption("This is just a test")
@@ -270,7 +244,7 @@ def main():
  #    plt.plot(y, color="red")
  #    plt.show()
 
-    total_time = 20
+    total_time = 30
     dt = 0.01
 
     MASS_ERROR = 0.01
@@ -387,7 +361,7 @@ def main():
         #     plt.show()
         #     sys.exit(0)
 
-        if time > 5.9999:
+        if time > 35.9999:
             print(f'z path target history:\n {z_path_target_history[:, 0]}')
             z_target_actual = drone_state_history[:,0]
             # print(f'Z POSITION ACTUAL: \n {z_target_actual}')
