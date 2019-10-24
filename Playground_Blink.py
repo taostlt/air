@@ -14,11 +14,10 @@ import matplotlib.pylab as pylab # this comes from 1. Coaxial Drone Dynamics SOL
 from pymunk.pygame_util import DrawOptions
 import webbrowser
 
+import plotting
+
 import pymunk
 
-class Test:
-    def clear():
-        screen.fill((255, 255, 255))
 
 class Switch:
     def __init__(self):
@@ -48,17 +47,6 @@ class Card(pygame.sprite.Sprite):
         screen.blit(self.surf, (card_text_x - offset_x, card_text_y - offset_y))
         screen.blit(font.render(card_text, True, (color_text)), (card_text_x, card_text_y))
         # screen.blit(font.render(dynamic_text, True, (color_text)), (dynamic_text_x, dynamic_text_y))
-
-class Ground:
-        def __init__(self, space, z_position):
-            self.groundHeight = z_position
-            self.body = pymunk.Body(0, 0, body_type=pymunk.Body.STATIC)
-            width = 600
-            self.shape = pymunk.Poly.create_box(self.body, (width, 50))
-            # self.shape.body.position = (width//2, 144.129925)
-            self.shape.body.position = (width // 2, self.groundHeight)
-            space.add(self.shape, self.body)
-            # print("I JUST CREATED GROUND.")
 
 class CoaxialCopter:
     X: object
@@ -120,6 +108,10 @@ class CoaxialCopter:
         c = f1 + f2
         M_x = (f1 - f2) * self.l
         return c, M_x
+
+    @property
+    def z(self):
+        return self.X[0]
 
     @property
     def z_dot_dot(self):
@@ -218,22 +210,18 @@ def main():
     space = pymunk.Space()
     space.gravity = 0, 9.800  # Pymunk defines gravity incorrectly by default,
 
-    # space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
+            # space.gravity = 0, 9.8     # as seen here, it defines 'down' as a negative acceleration (see Slide Pin Joint demo)
     j = -1  # j is a unit vector to indicate direction (ie. Khan academy "normal force elevator")
     gravity_ref = space.gravity[1]
 
     image = pygame.image.load(r'/home/frank/Pictures/Amazon_Response_By_Seller.png')
     # mySwitch = Switch()
     name = 'Alex'
-    # dt = 0.002  # from homework
 
-    # myCard = Card(screen, font,str(space.step(1/60.0)), 300,300, 20,20, THECOLORS["royalblue"],THECOLORS["white"])
-
-    loop = 0
-    # loop_count = np.array([0])
     start_ticks = pygame.time.get_ticks()                   # starter ticks
     loop_count = 0
     time = 0
+
     #                               #  loop, time, z,   z_dot_dot, z_path_actual
     # system_state         = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
     # system_state_history = np.array([0.0, 0.0,  0.0, 0.0,       0.0], dtype=np.float)
@@ -256,19 +244,37 @@ def main():
  #    plt.plot(y, color="red")
  #    plt.show()
 
-    total_time = 5.0
-    dt = 0.002
+    total_time = 30
+    dt = 0.01
 
-    drone2 = CoaxialCopter("2", space, gravity_ref)
+    MASS_ERROR = 0.01
+    K_P = 450.0
+    # preparation
+    droneB = CoaxialCopter("B", space, gravity_ref)
+    perceived_mass = droneB.mass * MASS_ERROR
+    controller = PController(K_P, perceived_mass)
+
     t = np.linspace(0.0, total_time, int(total_time/ dt))
-    drone2_state_history = drone2.X
-    drone2_path_target = 0.5 * np.cos(2 * t) - 0.5
-    drone2_dot_dot_path = -2.0 * np.cos(2 * t)
+    droneB_state_history = droneB.X
+    # drone2_path_target = 0.5 * np.cos(2 * t) - 0.5
+    droneB_path_target = -np.ones(t.shape[0])
+    # drone2_dot_dot_path = -2.0 * np.cos(2 * t)
 
-    for i in range(t.shape[0] - 1):
-        drone2.set_rotors_angular_velocities(drone2_dot_dot_path[i])
-        drone2_state = drone2.advance_state(dt)
-        drone2_state_history = np.vstack((drone2_state_history, drone2_state))
+    history = []
+    for z_target in droneB_path_target:
+        z_actual = droneB.z
+        u = controller.thrust_control(z_target, z_actual)
+        droneB.thrust = u
+        droneB.advance_state(dt)
+        history.append(droneB.X)
+
+    z_actual = [h[0] for h in history]
+    plotting.compare_planned_to_actual(z_actual, droneB_path_target, t)
+
+    # for i in range(t.shape[0] - 1):
+    #     droneB.set_rotors_angular_velocities(droneB_dot_dot_path[i])
+    #     droneB_state = droneB.advance_state(dt)
+    #     droneB_state_history = np.vstack((droneB_state_history, droneB_state))
 
     # plt.plot(t, drone2_path_target, label="actual state history", marker='o', color="red")
     # plt.title("Drone '2' planned path, lin space")
@@ -287,10 +293,9 @@ def main():
     dt_average = np.array([0.0])
     dt_average_history = np.array([0.0])
 
-                               #     time,  z_target, z_actual, z_acc,  error (z_target-z_actual)
+        #                            time,  z_target, z_actual, z_acc, error (z_target-z_actual)
     system_state         = np.array([ 0.0,  0.0,       0.0,     0.0,   0.0])
     system_state_history = np.array([ 0.0,  0.0,       0.0,     0.0,   0.0])
-    #---------------------
 
     while True:
         for event in pygame.event.get():
@@ -316,25 +321,11 @@ def main():
         # space.step(1 / 60.0)
         clock.tick(500)
 
-        print(f'Start ticks: {start_ticks}')
         print(f'Pygame tick difference:{((pygame.time.get_ticks()-start_ticks) / 1000.00)}')
-
-        # Calculate Time in Seconds. DONE.
-
-        # Increment loop data. DONE.
-        # Increment time data. DONE.
-        # Store loop data & time data in a current np.array. DONE.
-        # Add current data on top of old data. DONE.
-        # Plot column of loop data. DONE.
-        # Plot column of time data. DONE.
-
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
         # print(f'TIME: {time}')
         loop_count += 1
-        # print(f'Loop Count: {np.round(loop_count/60)}')
-        # print(f't: {t.shape}')
-
         z_path_target = 0.5 * np.cos(2 * time) - 0.5
         print(f'z_path_target: \n {z_path_target}')
 
@@ -354,7 +345,7 @@ def main():
         system_state[4] = (z_path_target - z_path_actual) * j                               # Store error
         system_state_history = np.vstack((system_state_history, system_state))
 
-                     # Turn dt average off and on here:
+                     # TURN DT AVERAGE OFF AND ON:
         # dt_state = time_state_history[loop_count] - time_state_history[loop_count-1]
         # dt_state_history = np.vstack((dt_state_history, dt_state))
         # dt_average[0] = time/loop_count                                                # same as 1 / (loop_count/time)
@@ -370,7 +361,7 @@ def main():
         #     plt.show()
         #     sys.exit(0)
 
-        if time > 5.9999:
+        if time > 35.9999:
             print(f'z path target history:\n {z_path_target_history[:, 0]}')
             z_target_actual = drone_state_history[:,0]
             # print(f'Z POSITION ACTUAL: \n {z_target_actual}')
