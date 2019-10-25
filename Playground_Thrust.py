@@ -79,7 +79,6 @@ class Monorotor:
         self.X = self.X + X_dot * dt
         return self.X
 
-
 class PController:
 
     def __init__(self, k_p, m):
@@ -99,7 +98,6 @@ class PController:
 
         return u
 
-
 def main():
     pygame.init()
     size = width, height = 600, 600
@@ -113,9 +111,12 @@ def main():
     j = -1
     gravity_ref = space.gravity[1]
 
-    start_ticks = pygame.time.get_ticks()                   # starter ticks
-    loop_count = 0
+    start_ticks = pygame.time.get_ticks()                           # starter ticks
 
+    image = pygame.image.load(r'/home/frank/Pictures/Amazon_Response_By_Seller.png')
+    mySwitch = Switch()
+
+    loop_count = 0
     MASS_ERROR = 1.0
     K_P = 10.0
 
@@ -124,23 +125,20 @@ def main():
     perceived_mass = drone.m * MASS_ERROR
     controller = PController(K_P, perceived_mass)
 
-    image = pygame.image.load(r'/home/frank/Pictures/Amazon_Response_By_Seller.png')
-    mySwitch = Switch()
-
     total_time = 20.0
-    dt = 0.001
-    t = np.linspace(0.0, total_time, int(total_time / dt))
-    z_path = -np.ones(t.shape[0])
+    dt = 0.002
+    # t = np.linspace(0.0, total_time, int(total_time / dt))
 
     # run simulation
     history = []
-    for z_target in z_path:
-        z_actual = drone.z
-        u = controller.thrust_control(z_target, z_actual)
-        drone.thrust = u
-        drone.advance_state(dt)
-        history.append(drone.X)
-
+    z_target = np.array([0.0])
+    # for z_target in z_path:
+    #     u = controller.thrust_control(z_target, z_actual)
+    #     drone.thrust = u
+    #     drone.advance_state(dt)
+    #     history.append(drone.X)
+    # z_path = -np.ones(t.shape[0])
+    z_path = 1.0
 
     while True:
         for event in pygame.event.get():
@@ -166,15 +164,35 @@ def main():
         clock.tick(500)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
-        # print(f'TIME: {time}')
-
+        print(f'TIME: {int(time)}')
         loop_count += 1
 
-        if time < 10.00:
+        z_actual = drone.z
+        print(f'drone z: {z_actual}')
+        print(f'')
+        z_target = 1.0
+        u = controller.thrust_control(z_target,z_actual)
+        drone.thrust = u
+        drone.advance_state(dt)
+        history.append(drone.X)
+
+        if time > 10.00:
             # generate plots
+            t = np.linspace(0.0, int(time), int(time)+1)
+            z_target = np.ones((1,9))
+            print(f't: {t}')
             z_actual = [h[0] for h in history]
+            print(f'z actual: {np.round(z_actual,2)}')
+
+            print(f'History: {history}')
+            print(f'z target shape is: \n {z_target}')
+            n = np.arange(0, 10, 1)
+            print(f'n: {n, n.shape}')
+            print(f'z target shape is: {z_target.shape}')
+
             plotting.compare_planned_to_actual(z_actual, z_path, t)
-            
+            sys.exit(0)
+
         pygame.display.flip()
 
 if __name__ == '__main__':
