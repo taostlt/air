@@ -125,9 +125,9 @@ def main():
     perceived_mass = drone.m * MASS_ERROR
     controller = PController(K_P, perceived_mass)
 
-    total_time = 20.0
-    dt = 0.002
+    total_time = 1.0
     # t = np.linspace(0.0, total_time, int(total_time / dt))
+    dt = 0.002
 
     # run simulation
     history = []
@@ -138,9 +138,12 @@ def main():
     #     drone.advance_state(dt)
     #     history.append(drone.X)
     # z_path = -np.ones(t.shape[0])
-    z_path = 1.0
+    z_path = np.array([0.0])
+
+    z_actual_list = []
 
     while True:
+
         for event in pygame.event.get():
             if event.type == QUIT:
                 sys.exit(0)
@@ -168,6 +171,7 @@ def main():
         loop_count += 1
 
         z_actual = drone.z
+        z_actual_list.append(z_actual)
         print(f'drone z: {z_actual}')
         print(f'')
         z_target = 1.0
@@ -176,20 +180,16 @@ def main():
         drone.advance_state(dt)
         history.append(drone.X)
 
-        if time > 10.00:
+        if time > 1.00:
+            print(f'z actual list: {z_actual_list}')
             # generate plots
-            t = np.linspace(0.0, int(time), int(time)+1)
-            z_target = np.ones((1,9))
+            t = np.linspace(0.0, int(time), 10)
+            z_actual = np.full((5,), 1)
+            z_path = np.full((5, ), 3)
+            t = t[0:5]
+            print(f'z actual: {type(z_actual)}, {z_actual}')
+            print(f'z path: {type(z_path)}, {z_path}')
             print(f't: {t}')
-            z_actual = [h[0] for h in history]
-            print(f'z actual: {np.round(z_actual,2)}')
-
-            print(f'History: {history}')
-            print(f'z target shape is: \n {z_target}')
-            n = np.arange(0, 10, 1)
-            print(f'n: {n, n.shape}')
-            print(f'z target shape is: {z_target.shape}')
-
             plotting.compare_planned_to_actual(z_actual, z_path, t)
             sys.exit(0)
 
