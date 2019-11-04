@@ -141,6 +141,9 @@ def main():
     z_path = np.array([0.0])
 
     z_actual_list = []
+    time_history = np.array([0.0])
+    time_history_list = []
+    total_dts = 0.0
 
     while True:
 
@@ -164,32 +167,52 @@ def main():
                 myCard = Card(screen, font, str('Left'), 300, 300, 20, 20, THECOLORS["royalblue"],
                               THECOLORS["white"])
 
-        clock.tick(500)
+        clock.tick(10)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
         print(f'TIME: {int(time)}')
         loop_count += 1
+        time_history = np.vstack((time_history, time))
+        time_history_list.append(time)
 
         z_actual = drone.z
         z_actual_list.append(z_actual)
         print(f'drone z: {z_actual}')
-        print(f'')
         z_target = 1.0
         u = controller.thrust_control(z_target,z_actual)
         drone.thrust = u
         drone.advance_state(dt)
         history.append(drone.X)
 
-        if time > 1.00:
+        if time > 10.00:
             print(f'z actual list: {z_actual_list}')
             # generate plots
-            t = np.linspace(0.0, int(time), 10)
-            z_actual = np.full((5,), 1)
-            z_path = np.full((5, ), 3)
-            t = t[0:5]
-            print(f'z actual: {type(z_actual)}, {z_actual}')
-            print(f'z path: {type(z_path)}, {z_path}')
-            print(f't: {t}')
+            t = np.linspace(0.0, time, 101)
+            dt = t[1] - t[0]
+            print(f'length of t is: {len(t)}')
+            print(f'length of time history list:{len(time_history_list)}')
+
+            print(f'dt linspace:{dt}')
+            z_path = 0.5 * np.cos(8 * t) - 0.5
+            print(f'z path shape: {z_path.shape}')
+           # t = t[0:500]
+            plt.plot(t, z_path)
+            plt.show()
+            # print(f'Time History: \n {time_history[:,0:5]}')
+            # print(f'Time History List: \n {time_history_list}')
+            dt_pymunk = time_history_list[1]-time_history_list[0]
+            total_dts = len(time_history_list)
+            frequency_pymunk_avg = total_dts / time
+            dt_pymunk_avg = 1.0 / frequency_pymunk_avg
+            # print(f'dt pymunk:{dt_pymunk}')
+            # print(f'frequency pymunk avg: {frequency_pymunk_avg}')
+            # print(f'dt pymunk avg: {dt_pymunk_avg}')
+
+            # print(f'z actual: {type(z_actual)}, {z_actual}')
+            # print(f'z actual shape: {z_actual.shape}')
+            #
+            # print(f'z path: {type(z_path)}, {z_path}')
+            # print(f't: {t}')
             plotting.compare_planned_to_actual(z_actual, z_path, t)
             sys.exit(0)
 
