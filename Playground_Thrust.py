@@ -143,6 +143,7 @@ def main():
     z_actual_list = []
     time_history = np.array([0.0])
     time_history_list = []
+    z_target_list = []
     total_dts = 0.0
 
     while True:
@@ -167,7 +168,7 @@ def main():
                 myCard = Card(screen, font, str('Left'), 300, 300, 20, 20, THECOLORS["royalblue"],
                               THECOLORS["white"])
 
-        fps = 100.0
+        fps = 10.0
         clock.tick(fps)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
@@ -179,19 +180,26 @@ def main():
         z_actual = drone.z
         z_actual_list.append(z_actual)
         print(f'drone z: {z_actual}')
-        z_target = 1.0
+        z_target = np.cos(2 * time) - 0.5
+        z_target_list.append(z_target)
+        print(f'z_target: {z_target}')
         u = controller.thrust_control(z_target,z_actual)
         drone.thrust = u
         drone.advance_state(dt)
         history.append(drone.X)
 
         if time > 10.00:
+            t = np.linspace(0.0, time, fps*10 + 1)
             # print(f'z actual list: {z_actual_list}')
             # generate plots
+            print(f'Length of t is: {len(t)}')
+            print(f'Length of z_target_list: {len(z_target_list)}')
+            print(f'z target list: \n{z_target_list}')
+            plt.plot(t, z_target_list)
+            plt.show()
             dt = time / fps
             print(f'dt linspace: {dt}')
 
-            t = np.linspace(0.0, time, fps+1)
             # dt = t[1] - t[0]
             print(f'time is: {time}')
             t_pymunk = np.linspace(0.0, time, int(time/dt)+1)
@@ -207,8 +215,7 @@ def main():
             frequency_pymunk_avg = total_dts / time
             dt_pymunk_avg = 1.0 / frequency_pymunk_avg
             print(f'dt pymunk:{dt_pymunk}')
-            plt.plot(t, z_path_lin, color='blue')
-            plt.plot(t_pymunk, z_path_pymunk, color='red')
+            plt.plot(t, np.full((int(fps+1),),1))
 
             plt.show()
             # print(f'frequency pymunk avg: {frequency_pymunk_avg}')
