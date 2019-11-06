@@ -168,7 +168,7 @@ def main():
                 myCard = Card(screen, font, str('Left'), 300, 300, 20, 20, THECOLORS["royalblue"],
                               THECOLORS["white"])
 
-        fps = 10.0
+        fps = 1.0
         clock.tick(fps)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
@@ -189,7 +189,7 @@ def main():
         history.append(drone.X)
 
         if time > 10.00:
-            t = np.linspace(0.0, time, fps*10 + 1)
+            t = np.linspace(0.0, time, fps + 1)
             # print(f'z actual list: {z_actual_list}')
             # generate plots
             print(f'Length of t is: {len(t)}')
