@@ -127,7 +127,7 @@ def main():
 
     total_time = 1.0
     # t = np.linspace(0.0, total_time, int(total_time / dt))
-    dt = 0.002
+    # dt = 0.002
 
     # run simulation
     history = []
@@ -144,10 +144,9 @@ def main():
     time_history = np.array([0.0])
     time_history_list = []
     z_target_list = []
-    total_dts = 0.0
+    dt = 0.0
 
     while True:
-
         for event in pygame.event.get():
             if event.type == QUIT:
                 sys.exit(0)
@@ -167,8 +166,7 @@ def main():
                 print('key LEFT')
                 myCard = Card(screen, font, str('Left'), 300, 300, 20, 20, THECOLORS["royalblue"],
                               THECOLORS["white"])
-
-        fps = 1.0
+        fps = 10.0
         clock.tick(fps)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
@@ -179,24 +177,39 @@ def main():
 
         z_actual = drone.z
         z_actual_list.append(z_actual)
-        print(f'drone z: {z_actual}')
+        # print(f'drone z: {z_actual}')
         z_target = np.cos(2 * time) - 0.5
         z_target_list.append(z_target)
-        print(f'z_target: {z_target}')
+        # print(f'z_target: {z_target}')
         u = controller.thrust_control(z_target,z_actual)
         drone.thrust = u
         drone.advance_state(dt)
         history.append(drone.X)
 
         if time > 10.00:
-            t = np.linspace(0.0, time, fps + 1)
+            dt = 0.002
+            print(f'End time: {time}')
+            t = np.linspace(0.0, time, int(time/dt))
+            time_py = np.linspace(0.0, time, loop_count)
+            plt.plot(t, t)
+            plt.plot(time_py, time_py, color = 'black')
+            plt.show()
+            print(f'dt:{dt}')
+            print(f'dt as time / frames: {time/loop_count}')
+            print(f'# frame: {loop_count}')
+            print(f'# frame: {time/dt}')
+            print(f'# frames: {fps * time}')
+            print(f'Average fps: {loop_count/time}')
+            print(f'Time divided by frame: {time/loop_count}')
             # print(f'z actual list: {z_actual_list}')
             # generate plots
-            print(f'Length of t is: {len(t)}')
-            print(f'Length of z_target_list: {len(z_target_list)}')
-            print(f'z target list: \n{z_target_list}')
-            plt.plot(t, z_target_list)
-            plt.show()
+            # print(f'fps is: {fps}')
+            # print(f'Length of t is: {len(t)}')
+            # print(f't:\n {t}')
+            # print(f'Length of z_target_list: {len(z_target_list)}')
+            # print(f'z target list: \n{z_target_list}')
+            # plt.plot(t, z_target_list)
+            # plt.show()
             dt = time / fps
             print(f'dt linspace: {dt}')
 
@@ -215,9 +228,9 @@ def main():
             frequency_pymunk_avg = total_dts / time
             dt_pymunk_avg = 1.0 / frequency_pymunk_avg
             print(f'dt pymunk:{dt_pymunk}')
-            plt.plot(t, np.full((int(fps+1),),1))
+            # plt.plot(t, np.full((int(fps+1),),1))
 
-            plt.show()
+            # plt.show()
             # print(f'frequency pymunk avg: {frequency_pymunk_avg}')
             # print(f'dt pymunk avg: {dt_pymunk_avg}')
 
