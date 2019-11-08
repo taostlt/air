@@ -143,7 +143,7 @@ def main():
     z_actual_list = []
     time_history = np.array([0.0])
     time_history_list = []
-    z_target_list = []
+    z_targPy_history = np.array([0.0])
     dt = 0.0
 
     while True:
@@ -172,14 +172,20 @@ def main():
         time = float(seconds)
         print(f'TIME: {int(time)}')
         loop_count += 1
-        time_history = np.vstack((time_history, time))
-        time_history_list.append(time)
+        time_history = np.hstack((time_history, time))
+        z_targPy = np.cos(2 * time) - 0.5
+        z_targPy_history = np.hstack((z_targPy_history, z_targPy))
 
         z_actual = drone.z
         z_actual_list.append(z_actual)
         # print(f'drone z: {z_actual}')
-        z_target = np.cos(2 * time) - 0.5
-        z_target_list.append(z_target)
+
+        # z_target_lin = np.cos(2 * time) - 0.5
+        # z_target_lin_list.append(z_target_lin)
+
+        # z_target_py = np.cos(2 * time) - 0.5
+        # z_target_py_list.append(z_target_py)
+
         # print(f'z_target: {z_target}')
         u = controller.thrust_control(z_target,z_actual)
         drone.thrust = u
@@ -189,11 +195,25 @@ def main():
         if time > 10.00:
             dt = 0.002
             print(f'End time: {time}')
-            t = np.linspace(0.0, time, int(time/dt))
-            time_py = np.linspace(0.0, time, loop_count)
-            plt.plot(t, t)
-            plt.plot(time_py, time_py, color = 'black')
+            # t = np.linspace(0.0, time, int(time/dt))
+            # z_targ_gnd = 0.5 * np.cos(2 * t) - 0.5
+
+            # time_py = np.linspace(0.0, time, loop_count)
+            print(f'time history:{time_history}')
+            # time_py = time_history
+            # z_targ_py = np.cos(2 * time_py) - 0.5
+
+            plt.figure(figsize=(8,4))
+            row, column = 1, 2
+            # plt.subplot(row, column, 1)
+            # plt.plot(t, z_targ_gnd)
+            # plt.title("Lin time, z_target ground")
+
+            plt.subplot(row, column, 2)
+            plt.plot(time_history, z_targPy_history, color = "red")
+            plt.title("Py time, z target Py")
             plt.show()
+
             print(f'dt:{dt}')
             print(f'dt as time / frames: {time/loop_count}')
             print(f'# frame: {loop_count}')
