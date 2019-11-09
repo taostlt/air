@@ -117,17 +117,13 @@ def main():
     mySwitch = Switch()
 
     loop_count = 0
-    MASS_ERROR = 1.0
+    MASS_ERROR = 1.001
     K_P = 10.0
 
     # preparation
     drone = Monorotor()
     perceived_mass = drone.m * MASS_ERROR
     controller = PController(K_P, perceived_mass)
-
-    total_time = 1.0
-    # t = np.linspace(0.0, total_time, int(total_time / dt))
-    # dt = 0.002
 
     # run simulation
     history = []
@@ -139,12 +135,12 @@ def main():
     #     history.append(drone.X)
     # z_path = -np.ones(t.shape[0])
     z_path = np.array([0.0])
-
-    z_actual_list = []
+    z_target = np.array([0.0])
+    # z_actual_list = []
     time_history = np.array([0.0])
-    time_history_list = []
+    z_targPy = np.array([1.0])
     z_targPy_history = np.array([0.0])
-    dt = 0.0
+    dt = 0.1
 
     while True:
         for event in pygame.event.get():
@@ -173,12 +169,15 @@ def main():
         print(f'TIME: {int(time)}')
         loop_count += 1
         time_history = np.hstack((time_history, time))
-        z_targPy = np.cos(2 * time) - 0.5
+        # z_targPy = np.cos(2 * time) - 0.5
+        z_targPy = np.hstack((z_targPy, 1.0))
         z_targPy_history = np.hstack((z_targPy_history, z_targPy))
+        z_actual = [1.0]
+        u = controller.thrust_control(z_targPy, z_actual )
 
-        z_actual = drone.z
-        z_actual_list.append(z_actual)
-        # print(f'drone z: {z_actual}')
+        # z_actual = [drone.z]
+        # print(f'drone z:{z_actual}')
+        # # z_actual = np.hstack((z_target, drone.z))
 
         # z_target_lin = np.cos(2 * time) - 0.5
         # z_target_lin_list.append(z_target_lin)
@@ -187,14 +186,16 @@ def main():
         # z_target_py_list.append(z_target_py)
 
         # print(f'z_target: {z_target}')
-        u = controller.thrust_control(z_target,z_actual)
+        # u = controller.thrust_control(z_target,z_actual)
+        u = 1.0
         drone.thrust = u
         drone.advance_state(dt)
         history.append(drone.X)
 
         if time > 10.00:
-            dt = 0.002
-            print(f'End time: {time}')
+            # dt = 0.002
+            print(f'z_target: {z_targPy}')
+            # print(f'End time: {time}')
             # t = np.linspace(0.0, time, int(time/dt))
             # z_targ_gnd = 0.5 * np.cos(2 * t) - 0.5
 
@@ -231,23 +232,12 @@ def main():
             # plt.plot(t, z_target_list)
             # plt.show()
             dt = time / fps
-            print(f'dt linspace: {dt}')
-
-            # dt = t[1] - t[0]
-            print(f'time is: {time}')
-            t_pymunk = np.linspace(0.0, time, int(time/dt)+1)
-
-            z_path_lin = 0.5 * np.cos(2 * t) - 0.5
-            z_path_pymunk = 0.5 * np.cos(2 * t_pymunk) - 0.5
-            print(f'z path lin: {len(z_path_lin)}, \nz path length pymunk: {len(z_path_pymunk)}')
 
             # print(f'Time History: \n {time_history[:,0:5]}')
             # print(f'Time History List: \n {time_history_list}')
-            dt_pymunk = time_history_list[1]-time_history_list[0]
-            total_dts = len(time_history_list)
-            frequency_pymunk_avg = total_dts / time
-            dt_pymunk_avg = 1.0 / frequency_pymunk_avg
-            print(f'dt pymunk:{dt_pymunk}')
+            # frequency_pymunk_avg = total_dts / time
+            # dt_pymunk_avg = 1.0 / frequency_pymunk_avg
+            # print(f'dt pymunk:{dt_pymunk}')
             # plt.plot(t, np.full((int(fps+1),),1))
 
             # plt.show()
