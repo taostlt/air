@@ -98,49 +98,82 @@ class PController:
 
         return u
 
+class OpenLoopController:
+    # Robert Redford has a donkey high on a hill.                                            # main character, target_z
+    # Ownen Wilson shows up with his donkey, only part way up the hill.                   # second character, current_z
+    # Paul Newman compares Robert to Owen. "Look at the distance between."                   # third character, delta_z
+    # Paul runs up the hill a short distance. "You have to go this fast."       # Paul show velocity, z_target_dot / dt
+    # Saffron tells them, they need to go even faster.                 # fourth character, z_target_dot - z_current_dot
+    # "You see how fast Robert is going compared to Owen?" She runs faster up the hill.                  # delta_z / dt
+    # The gold becomes carrots.
+    # Saffron says,                                                              # fnet_thrust = mass * z_target_dot_dot
+    # "This is the motivation required to get your bags of gold up the hill."
+    # "Of course your Donkeys have their weight also."                    # thrust = donkey mass * gravity - fnet_thrust
+    # The line man (Van Cleeve) says "Boy, look where your Donkey is at." Owen's has moved up the hill.
+    # You only have this much more to go"  he shows a gap,
+    # "and you only need to do it this quickly." He zips his fingers across an imaginary space.
+    #                                                                 # self.vehicle += np.array([delta_z, delta_z_dot])
+    # "Here are your carrots." He hands them over.                                                       # return thrust
+
+
+    def __init__(self, vehicle_mass, initial_state=np.array([0.0, 0.0])):
+        self.vehicle_mass = vehicle_mass
+        self.vehicle_state = initial_state
+        self.g = 9.81
+
+    def thrust_control(self, target_z, dt):
+        current_z, current_z_dot = self.vehicle_state
+
+        delta_z = target_z - current_z
+        target_z_dot = delta_z / dt
+
+        delta_z_dot = target_z_dot - current_z_dot
+        target_z_dot_dot = delta_z_dot / dt
+
+        f_net_thrust = target_z_dot_dot * self.vehicle_mass
+        thrust = self.g * self.vehicle_mass - f_net_thrust
+
+        self.vehicle_state += np.array([delta_z, delta_z_dot])
+
+        return thrust
+
 def main():
+    # Intialize Pymunk Environment
     pygame.init()
     size = width, height = 600, 600
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("This is just a test")
     clock = pygame.time.Clock()
     font = pygame.font.SysFont('Consolas', 25)
-
     space = pymunk.Space()
     space.gravity = 0, 9.800
     j = -1
     gravity_ref = space.gravity[1]
-
     start_ticks = pygame.time.get_ticks()                           # starter ticks
 
+    # My Code to turn the light switch on.
     image = pygame.image.load(r'/home/frank/Pictures/Amazon_Response_By_Seller.png')
     mySwitch = Switch()
 
+    # Initialize System
     loop_count = 0
-    MASS_ERROR = 1.001
-    K_P = 10.0
+    dt = 0.1
 
-    # preparation
     drone = Monorotor()
+    MASS_ERROR = 1.001
+    drone_start_state = drone.X
     perceived_mass = drone.m * MASS_ERROR
-    controller = PController(K_P, perceived_mass)
+    controller = OpenLoopController(perceived_mass, drone_start_state)
+    # controller = PController(K_P, perceived_mass)
 
-    # run simulation
+    drone_state_history = []
     history = []
+    z_path = np.array([1.0])
     z_target = np.array([0.0])
-    # for z_target in z_path:
-    #     u = controller.thrust_control(z_target, z_actual)
-    #     drone.thrust = u
-    #     drone.advance_state(dt)
-    #     history.append(drone.X)
-    # z_path = -np.ones(t.shape[0])
-    z_path = np.array([0.0])
-    z_target = np.array([0.0])
-    # z_actual_list = []
+    z_actual = [np.array([0.0])]
     time_history = np.array([0.0])
     z_targPy = np.array([1.0])
     z_targPy_history = np.array([0.0])
-    dt = 0.1
 
     while True:
         for event in pygame.event.get():
@@ -172,8 +205,11 @@ def main():
         # z_targPy = np.cos(2 * time) - 0.5
         z_targPy = np.hstack((z_targPy, 1.0))
         z_targPy_history = np.hstack((z_targPy_history, z_targPy))
-        z_actual = [1.0]
-        u = controller.thrust_control(z_targPy, z_actual )
+        # z_actual.append(np.array([1.0]))
+
+
+        drone_state_history.append(drone.X)
+        drone.thrust = controller.thrust_control(z_targPy, dt)
 
         # z_actual = [drone.z]
         # print(f'drone z:{z_actual}')
