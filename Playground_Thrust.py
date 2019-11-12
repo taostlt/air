@@ -119,12 +119,20 @@ class OpenLoopController:
     def __init__(self, vehicle_mass, initial_state=np.array([0.0, 0.0])):
         self.vehicle_mass = vehicle_mass
         self.vehicle_state = initial_state
+        initial_state = np.array([1.0, 1.0])
+        initial_state = np.float32(initial_state)
+        print(f'Initial state values: {initial_state}')
+        print(f'Initial state type: {type(initial_state)}')
+
         self.g = 9.81
 
     def thrust_control(self, target_z, dt):
         current_z, current_z_dot = self.vehicle_state
-
+        print(f'Initial state values: {current_z}')
+        print(f'Initial state type: {type(current_z)}')
         delta_z = target_z - current_z
+        # delta_z = np.full((1,),1)
+        print(f'delta_z: {delta_z}')
         target_z_dot = delta_z / dt
 
         delta_z_dot = target_z_dot - current_z_dot
@@ -172,7 +180,8 @@ def main():
     z_target = np.array([0.0])
     z_actual = [np.array([0.0])]
     time_history = np.array([0.0])
-    z_targPy = np.array([1.0])
+    z_targPy = np.array([1, 2], dtype=np.int64)
+    print(f'z_targPy type: {z_targPy.dtype}')
     z_targPy_history = np.array([0.0])
 
     while True:
@@ -203,13 +212,21 @@ def main():
         loop_count += 1
         time_history = np.hstack((time_history, time))
         # z_targPy = np.cos(2 * time) - 0.5
-        z_targPy = np.hstack((z_targPy, 1.0))
+        z_targPy = 1.0
+        print(f'z targPY value: {z_targPy}')
+        print(f'z targPY type: {type(z_targPy)}')
+        # print(f'z targPY shape: {z_targPy.shape}')
+
+        print(f'z target py:{z_targPy}')
+        # z_targPy = np.hstack((z_targPy, 1.0))
         z_targPy_history = np.hstack((z_targPy_history, z_targPy))
         # z_actual.append(np.array([1.0]))
 
-
         drone_state_history.append(drone.X)
         drone.thrust = controller.thrust_control(z_targPy, dt)
+        print(f'ACTOR Z TARGET IS: {z_targPy}')
+        print('Action..')
+        print(f'DRONE THRUST IS.... {drone.thrust}')
 
         # z_actual = [drone.z]
         # print(f'drone z:{z_actual}')
