@@ -115,24 +115,15 @@ class OpenLoopController:
     #                                                                 # self.vehicle += np.array([delta_z, delta_z_dot])
     # "Here are your carrots." He hands them over.                                                       # return thrust
 
-
     def __init__(self, vehicle_mass, initial_state=np.array([0.0, 0.0])):
         self.vehicle_mass = vehicle_mass
         self.vehicle_state = initial_state
-        initial_state = np.array([1.0, 1.0])
-        initial_state = np.float32(initial_state)
-        print(f'Initial state values: {initial_state}')
-        print(f'Initial state type: {type(initial_state)}')
-
         self.g = 9.81
 
     def thrust_control(self, target_z, dt):
         current_z, current_z_dot = self.vehicle_state
-        print(f'Initial state values: {current_z}')
-        print(f'Initial state type: {type(current_z)}')
+
         delta_z = target_z - current_z
-        # delta_z = np.full((1,),1)
-        print(f'delta_z: {delta_z}')
         target_z_dot = delta_z / dt
 
         delta_z_dot = target_z_dot - current_z_dot
@@ -165,24 +156,23 @@ def main():
 
     # Initialize System
     loop_count = 0
-    dt = 0.1
+    dt = 0.001
 
     drone = Monorotor()
-    MASS_ERROR = 1.001
+    MASS_ERROR = 1.00001
     drone_start_state = drone.X
+    print(f'drone start state: {drone_start_state}')
     perceived_mass = drone.m * MASS_ERROR
     controller = OpenLoopController(perceived_mass, drone_start_state)
     # controller = PController(K_P, perceived_mass)
 
-    drone_state_history = []
-    history = []
-    z_path = np.array([1.0])
-    z_target = np.array([0.0])
-    z_actual = [np.array([0.0])]
     time_history = np.array([0.0])
-    z_targPy = np.array([1, 2], dtype=np.int64)
-    print(f'z_targPy type: {z_targPy.dtype}')
-    z_targPy_history = np.array([0.0])
+
+    drone_state_history = []
+    drone_state_history.append(drone_start_state)  # Adding this line initializes drone_state_history with a value.
+
+    # z_target = np.cos(2 * time) - 0.5,             however time has not been defined outside of the while loop.
+    z_target_history = np.array([0.0])
 
     while True:
         for event in pygame.event.get():
@@ -211,61 +201,43 @@ def main():
         print(f'TIME: {int(time)}')
         loop_count += 1
         time_history = np.hstack((time_history, time))
-        # z_targPy = np.cos(2 * time) - 0.5
-        z_targPy = 1.0
-        print(f'z targPY value: {z_targPy}')
-        print(f'z targPY type: {type(z_targPy)}')
-        # print(f'z targPY shape: {z_targPy.shape}')
 
-        print(f'z target py:{z_targPy}')
-        # z_targPy = np.hstack((z_targPy, 1.0))
-        z_targPy_history = np.hstack((z_targPy_history, z_targPy))
-        # z_actual.append(np.array([1.0]))
+        z_target = np.cos(2 * time) - 0.5
+        print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
+        z_target_history = np.hstack((z_target_history, z_target))
 
         drone_state_history.append(drone.X)
-        drone.thrust = controller.thrust_control(z_targPy, dt)
-        print(f'ACTOR Z TARGET IS: {z_targPy}')
-        print('Action..')
-        print(f'DRONE THRUST IS.... {drone.thrust}')
-
-        # z_actual = [drone.z]
-        # print(f'drone z:{z_actual}')
-        # # z_actual = np.hstack((z_target, drone.z))
-
-        # z_target_lin = np.cos(2 * time) - 0.5
-        # z_target_lin_list.append(z_target_lin)
-
-        # z_target_py = np.cos(2 * time) - 0.5
-        # z_target_py_list.append(z_target_py)
-
-        # print(f'z_target: {z_target}')
-        # u = controller.thrust_control(z_target,z_actual)
-        u = 1.0
-        drone.thrust = u
+        drone.thrust = controller.thrust_control(z_target, dt)
+        # drone.thrust = 1.0
+        # print(f'       z target: {z_target}')
+        # print(f'   drone thrust: {drone.thrust}')
+        # print(f'drone z_dot_dot: {drone.z_dot_dot}')
         drone.advance_state(dt)
-        history.append(drone.X)
 
         if time > 10.00:
             # dt = 0.002
-            print(f'z_target: {z_targPy}')
-            # print(f'End time: {time}')
-            # t = np.linspace(0.0, time, int(time/dt))
-            # z_targ_gnd = 0.5 * np.cos(2 * t) - 0.5
+            print(f'z_target: {z_target}')
 
-            # time_py = np.linspace(0.0, time, loop_count)
-            print(f'time history:{time_history}')
-            # time_py = time_history
-            # z_targ_py = np.cos(2 * time_py) - 0.5
+            z_actual = [np.round(h[0],2) for h in drone_state_history]
+            print(f'z_actual type: {type(z_actual)}')
 
-            plt.figure(figsize=(8,4))
-            row, column = 1, 2
-            # plt.subplot(row, column, 1)
-            # plt.plot(t, z_targ_gnd)
-            # plt.title("Lin time, z_target ground")
+            # print(f'time history:{time_history}')
 
-            plt.subplot(row, column, 2)
-            plt.plot(time_history, z_targPy_history, color = "red")
-            plt.title("Py time, z target Py")
+            # plt.figure(figsize=(8,4))
+            # row, column = 1, 2
+            #
+            # plt.subplot(row, column, 2)
+            # print(f'time history: {time_history}')
+            plt.plot(time_history, z_target_history, color = "blue")
+            plt.plot(time_history, z_actual, color = "red")
+            plt.legend(["z_target", "z_actual"])
+            print(f'            z_actual IT: {z_actual}')
+            print(f'       z_target_history: {np.round(z_target_history,2)}')
+            print(f'        length z_actual: {len(z_actual)}')
+            print(f'length z_target_history: {len(z_target_history)}')
+
+            plt.title("z target, z actual over time")
+            plt.gca().invert_yaxis()
             plt.show()
 
             print(f'dt:{dt}')
@@ -279,6 +251,7 @@ def main():
             # generate plots
             # print(f'fps is: {fps}')
             # print(f'Length of t is: {len(t)}')
+
             # print(f't:\n {t}')
             # print(f'Length of z_target_list: {len(z_target_list)}')
             # print(f'z target list: \n{z_target_list}')
