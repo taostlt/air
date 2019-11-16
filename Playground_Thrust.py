@@ -77,6 +77,7 @@ class Monorotor:
             self.z_dot_dot])
 
         self.X = self.X + X_dot * dt
+
         return self.X
 
 class PController:
@@ -129,8 +130,8 @@ class OpenLoopController:
         delta_z_dot = target_z_dot - current_z_dot
         target_z_dot_dot = delta_z_dot / dt
 
-        f_net_thrust = target_z_dot_dot * self.vehicle_mass
-        thrust = self.g * self.vehicle_mass - f_net_thrust
+        target_f_net = target_z_dot_dot * self.vehicle_mass
+        thrust = self.vehicle_mass * self.g - target_f_net
 
         self.vehicle_state += np.array([delta_z, delta_z_dot])
 
@@ -156,22 +157,22 @@ def main():
 
     # Initialize System
     loop_count = 0
-    dt = 0.001
 
     drone = Monorotor()
-    MASS_ERROR = 1.00001
+    MASS_ERROR = 1.01
     drone_start_state = drone.X
+    drone_mass = drone.m
     print(f'drone start state: {drone_start_state}')
-    perceived_mass = drone.m * MASS_ERROR
+    perceived_mass = drone_mass * MASS_ERROR
     controller = OpenLoopController(perceived_mass, drone_start_state)
     # controller = PController(K_P, perceived_mass)
 
     time_history = np.array([0.0])
 
     drone_state_history = []
-    drone_state_history.append(drone_start_state)  # Adding this line initializes drone_state_history with a value.
+    drone_state_history.append(drone_start_state)       # Adding this line initializes drone_state_history with a value.
 
-    # z_target = np.cos(2 * time) - 0.5,             however time has not been defined outside of the while loop.
+    # z_target = np.cos(2 * time) - 0.5,         would add here but time has not been defined outside of the while loop.
     z_target_history = np.array([0.0])
 
     while True:
@@ -194,31 +195,38 @@ def main():
                 print('key LEFT')
                 myCard = Card(screen, font, str('Left'), 300, 300, 20, 20, THECOLORS["royalblue"],
                               THECOLORS["white"])
-        fps = 10.0
+        fps = 200.0
         clock.tick(fps)
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
         print(f'TIME: {int(time)}')
+        dt = time / fps
+        dt = 0.005
+
         loop_count += 1
         time_history = np.hstack((time_history, time))
 
-        z_target = np.cos(2 * time) - 0.5
+        # z_target = 0.5 * np.cos(2 * time) - 0.5   # Original
+        z_target = 0.5 * np.cos(2 * time) - 0.5
+        # z_target = 1.0
+
         print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
         z_target_history = np.hstack((z_target_history, z_target))
 
         drone_state_history.append(drone.X)
-        drone.thrust = controller.thrust_control(z_target, dt)
+        thrust = controller.thrust_control(z_target, dt)
+        drone.thrust = thrust
         # drone.thrust = 1.0
         # print(f'       z target: {z_target}')
         # print(f'   drone thrust: {drone.thrust}')
         # print(f'drone z_dot_dot: {drone.z_dot_dot}')
         drone.advance_state(dt)
 
-        if time > 10.00:
+        if time > 5.00:
             # dt = 0.002
             print(f'z_target: {z_target}')
 
-            z_actual = [np.round(h[0],2) for h in drone_state_history]
+            z_actual = [h[0] for h in drone_state_history]
             print(f'z_actual type: {type(z_actual)}')
 
             # print(f'time history:{time_history}')
@@ -227,9 +235,11 @@ def main():
             # row, column = 1, 2
             #
             # plt.subplot(row, column, 2)
-            # print(f'time history: {time_history}')
-            plt.plot(time_history, z_target_history, color = "blue")
-            plt.plot(time_history, z_actual, color = "red")
+            print(f'time history: {time_history}')
+            t = np.linspace(0.0, time, len(time_history))
+
+            plt.plot(t, z_target_history, color = "blue")
+            plt.plot(t, z_actual, color = "red")
             plt.legend(["z_target", "z_actual"])
             print(f'            z_actual IT: {z_actual}')
             print(f'       z_target_history: {np.round(z_target_history,2)}')
@@ -240,8 +250,8 @@ def main():
             plt.gca().invert_yaxis()
             plt.show()
 
-            print(f'dt:{dt}')
-            print(f'dt as time / frames: {time/loop_count}')
+            print(f'dt as time / fps:{dt}')
+            print(f'dt as time / frames (loop): {time/loop_count}')
             print(f'# frame: {loop_count}')
             print(f'# frame: {time/dt}')
             print(f'# frames: {fps * time}')
@@ -257,7 +267,6 @@ def main():
             # print(f'z target list: \n{z_target_list}')
             # plt.plot(t, z_target_list)
             # plt.show()
-            dt = time / fps
 
             # print(f'Time History: \n {time_history[:,0:5]}')
             # print(f'Time History List: \n {time_history_list}')
