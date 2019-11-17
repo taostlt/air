@@ -156,7 +156,7 @@ def main():
     mySwitch = Switch()
 
     # Initialize System
-    loop_count = 0
+    loop_count = 1
 
     drone = Monorotor()
     MASS_ERROR = 1.01
@@ -200,14 +200,21 @@ def main():
         seconds = (pygame.time.get_ticks() - start_ticks) / 1000.00
         time = float(seconds)
         print(f'TIME: {int(time)}')
-        dt = time / fps
-        dt = 0.005
+        print(f'Loop Count: {loop_count}')
+        dt = 1 / fps
+        # print(f'dt_B, 1/fps: {dt_B}')
+        # dt = time/(loop_count)
+        print(f'time/loop_count: {dt}')
+
+        # dt = 0.005
 
         loop_count += 1
         time_history = np.hstack((time_history, time))
 
         # z_target = 0.5 * np.cos(2 * time) - 0.5   # Original
         z_target = 0.5 * np.cos(2 * time) - 0.5
+        # z_target = 0.5 * np.cos(2 * 3.14 * 0.2 * time) - 0.5
+
         # z_target = 1.0
 
         print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
@@ -235,17 +242,17 @@ def main():
             #
             # plt.subplot(row, column, 2)
             print(f'time history: {time_history}')
-            t = np.linspace(0.0, time, len(time_history))
+            # t = np.linspace(0.0, time, len(time_history))
 
-            plt.plot(t, z_target_history, color = "blue")
-            plt.plot(t, z_actual, color = "red")
+            plt.plot(time_history, z_target_history, color = "blue")
+            plt.plot(time_history, z_actual, color = "red")
             plt.legend(["z_target", "z_actual"])
             print(f'            z_actual IT: {z_actual}')
             print(f'       z_target_history: {np.round(z_target_history,2)}')
             print(f'        length z_actual: {len(z_actual)}')
             print(f'length z_target_history: {len(z_target_history)}')
 
-            plt.title("z target, z actual over time")
+            plt.title("z target, z actual over time]")
             plt.gca().invert_yaxis()
             plt.show()
 
