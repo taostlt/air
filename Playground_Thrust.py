@@ -131,7 +131,7 @@ class OpenLoopController:
         target_z_dot_dot = delta_z_dot / dt
 
         target_f_net = target_z_dot_dot * self.vehicle_mass
-        thrust = self.vehicle_mass * self.g - target_f_net
+        thrust = self.g * self.vehicle_mass - target_f_net
 
         self.vehicle_state += np.array([delta_z, delta_z_dot])
 
@@ -214,8 +214,7 @@ def main():
         z_target_history = np.hstack((z_target_history, z_target))
 
         drone_state_history.append(drone.X)
-        thrust = controller.thrust_control(z_target, dt)
-        drone.thrust = thrust
+        drone.thrust = controller.thrust_control(z_target, dt)
         # drone.thrust = 1.0
         # print(f'       z target: {z_target}')
         # print(f'   drone thrust: {drone.thrust}')
