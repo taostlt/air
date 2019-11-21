@@ -171,9 +171,12 @@ def main():
 
     drone_state_history = []
     drone_state_history.append(drone_start_state)       # Adding this line initializes drone_state_history with a value.
+                                                        # Otherwise the len of z_actual & z_target are off by one.
 
     # z_target = np.cos(2 * time) - 0.5,         would add here but time has not been defined outside of the while loop.
     z_target_history = np.array([0.0])
+
+    z_error = []
 
     while True:
         for event in pygame.event.get():
@@ -202,22 +205,17 @@ def main():
         print(f'TIME: {int(time)}')
         print(f'Loop Count: {loop_count}')
         dt = 1 / fps
-        # print(f'dt_B, 1/fps: {dt_B}')
         # dt = time/(loop_count)
         print(f'time/loop_count: {dt}')
-
-        # dt = 0.005
 
         loop_count += 1
         time_history = np.hstack((time_history, time))
 
-        # z_target = 0.5 * np.cos(2 * time) - 0.5   # Original
         z_target = 0.5 * np.cos(2 * time) - 0.5
-        # z_target = 0.5 * np.cos(2 * 3.14 * 0.2 * time) - 0.5
-
+        # z_target = 0.5 * np.cos(2 * 3.14 * 0.2 * time) - 0.5  # The target Sin wave should include 2 Pi in it as a standard.
         # z_target = 1.0
 
-        print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
+        # print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
         z_target_history = np.hstack((z_target_history, z_target))
 
         drone_state_history.append(drone.X)
@@ -230,10 +228,13 @@ def main():
 
         if time > 5.00:
             # dt = 0.002
-            print(f'z_target: {z_target}')
+            # print(f'z_target: {z_target}')
 
-            z_actual = [h[0] for h in drone_state_history]
-            print(f'z_actual type: {type(z_actual)}')
+            z_actual_history = [h[0] for h in drone_state_history]
+            # print(f'z_actual type: {type(z_actual_history)}')
+            print(f'-------------- TIME: {time} ---------------')
+            z_error = z_target_history - z_actual_history
+            print(f'error:{z_target_history[-1] - z_actual_history[-1]}')
 
             # print(f'time history:{time_history}')
 
@@ -241,27 +242,34 @@ def main():
             # row, column = 1, 2
             #
             # plt.subplot(row, column, 2)
-            print(f'time history: {time_history}')
+            # print(f'time history: {time_history}')
             # t = np.linspace(0.0, time, len(time_history))
 
+            plt.subplot(2, 1, 1)
             plt.plot(time_history, z_target_history, color = "blue")
-            plt.plot(time_history, z_actual, color = "red")
+            plt.plot(time_history, z_actual_history, color = "red")
             plt.legend(["z_target", "z_actual"])
-            print(f'            z_actual IT: {z_actual}')
-            print(f'       z_target_history: {np.round(z_target_history,2)}')
-            print(f'        length z_actual: {len(z_actual)}')
-            print(f'length z_target_history: {len(z_target_history)}')
-
             plt.title("z target, z actual over time]")
             plt.gca().invert_yaxis()
+
+            plt.subplot(2,1, 2)
+            plt.plot(time_history, z_error)
+            plt.title("Error Value")
+            plt.tight_layout()
             plt.show()
+
+            # print(f'            z_actual IT: {z_actual_history}')
+            # print(f'       z_target_history: {np.round(z_target_history,2)}')
+            # print(f'        length z_actual: {len(z_actual_history)}')
+            # print(f'length z_target_history: {len(z_target_history)}')
+
 
             print(f'dt as time / fps:{dt}')
             print(f'dt as time / frames (loop): {time/loop_count}')
-            print(f'# frame: {loop_count}')
-            print(f'# frame: {time/dt}')
-            print(f'# frames: {fps * time}')
-            print(f'Average fps: {loop_count/time}')
+            print(f'# frame  (loop count): {loop_count}')
+            print(f'# frame     (time/dt): {time/dt}')
+            print(f'# frames (fps * time): {fps * time}')
+            print(f'Average fps:           {loop_count/time}')
             print(f'Time divided by frame: {time/loop_count}')
             # print(f'z actual list: {z_actual_list}')
             # generate plots
