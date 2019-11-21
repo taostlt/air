@@ -82,9 +82,9 @@ class Monorotor:
 
 class PController:
 
-    def __init__(self, k_p, m):
+    def __init__(self, k_p, vehicle_mass):
         self.k_p = k_p
-        self.vehicle_mass = m
+        self.vehicle_mass = vehicle_mass
         self.g = 9.81
 
     def thrust_control(self, z_target, z_actual):
@@ -117,6 +117,7 @@ class OpenLoopController:
     # "Here are your carrots." He hands them over.                                                       # return thrust
 
     def __init__(self, vehicle_mass, initial_state=np.array([0.0, 0.0])):
+
         self.vehicle_mass = vehicle_mass
         self.vehicle_state = initial_state
         self.g = 9.81
@@ -159,13 +160,14 @@ def main():
     loop_count = 1
 
     drone = Monorotor()
-    MASS_ERROR = 1.01
+    MASS_ERROR = 2.00
+    K_P = 10.00
+
     drone_start_state = drone.X
     drone_mass = drone.m
     print(f'drone start state: {drone_start_state}')
     perceived_mass = drone_mass * MASS_ERROR
-    controller = OpenLoopController(perceived_mass, drone_start_state)
-    # controller = PController(K_P, perceived_mass)
+    controller = PController(K_P, perceived_mass)
 
     time_history = np.array([0.0])
 
@@ -211,20 +213,22 @@ def main():
         loop_count += 1
         time_history = np.hstack((time_history, time))
 
-        z_target = 0.5 * np.cos(2 * time) - 0.5
+        z_target = -1
         # z_target = 0.5 * np.cos(2 * 3.14 * 0.2 * time) - 0.5  # The target Sin wave should include 2 Pi in it as a standard.
         # z_target = 1.0
 
         # print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
         z_target_history = np.hstack((z_target_history, z_target))
+        z_actual = drone.z
 
-        drone_state_history.append(drone.X)
-        drone.thrust = controller.thrust_control(z_target, dt)
+        drone.thrust = controller.thrust_control(z_target, z_actual)
         # drone.thrust = 1.0
         # print(f'       z target: {z_target}')
         # print(f'   drone thrust: {drone.thrust}')
         # print(f'drone z_dot_dot: {drone.z_dot_dot}')
         drone.advance_state(dt)
+        drone_state_history.append(drone.X)
+
 
         if time > 5.00:
             # dt = 0.002
@@ -233,7 +237,7 @@ def main():
             z_actual_history = [h[0] for h in drone_state_history]
             # print(f'z_actual type: {type(z_actual_history)}')
             print(f'-------------- TIME: {time} ---------------')
-            z_error = z_target_history - z_actual_history
+            z_error = abs(z_target_history - z_actual_history)
             print(f'error:{z_target_history[-1] - z_actual_history[-1]}')
 
             # print(f'time history:{time_history}')
@@ -249,7 +253,7 @@ def main():
             plt.plot(time_history, z_target_history, color = "blue")
             plt.plot(time_history, z_actual_history, color = "red")
             plt.legend(["z_target", "z_actual"])
-            plt.title("z target, z actual over time]")
+            plt.title("z target, z actual, over time")
             plt.gca().invert_yaxis()
 
             plt.subplot(2,1, 2)
