@@ -102,7 +102,7 @@ class PDController:
         d_term_thrust = self.k_d * err_dot
 
         u_bar = p_term_thrust + d_term_thrust
-        u = self.vehicle_mass
+        u = self.vehicle_mass * (self.g - u_bar)
 
         return u
 
@@ -188,8 +188,8 @@ def main():
     loop_count = 1
 
     drone = Monorotor()
-    MASS_ERROR = 2.00
-    K_P = 10.00
+    MASS_ERROR = 1.05
+    K_P = 20.00
     K_D = 2.0
 
     drone_start_state = drone.X
@@ -207,7 +207,7 @@ def main():
     # z_target = np.cos(2 * time) - 0.5,         would add here but time has not been defined outside of the while loop.
     z_target_history = np.array([0.0])
 
-    z_error = []
+    z_error = []                                        # Error in the z axis.
 
     while True:
         for event in pygame.event.get():
@@ -243,6 +243,8 @@ def main():
         time_history = np.hstack((time_history, time))
 
         z_target = -1
+        z_dot_target = 0
+
         # z_target = 0.5 * np.cos(2 * 3.14 * 0.2 * time) - 0.5  # The target Sin wave should include 2 Pi in it as a standard.
         # z_target = 1.0
 
