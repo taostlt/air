@@ -80,6 +80,34 @@ class Monorotor:
 
         return self.X
 
+class PDController:
+
+    def __init__(self, k_p, k_d, m):
+        self.k_p = k_p
+        self.k_d = k_d
+        self.vehicle_mass = m
+        self.g = 9.81
+
+    def thrust_control(self,
+                       z_target,
+                       z_actual,
+                       z_dot_target,
+                       z_dot_actual,
+                       z_dot_dot_ff=0.0):
+
+        err = z_target - z_actual
+        err_dot = z_dot_target - z_dot_actual
+
+        p_term_thrust = self.k_p * err
+        d_term_thrust = self.k_d * err_dot
+
+        u_bar = p_term_thrust + d_term_thrust
+        u = self.vehicle_mass
+
+        return u
+
+
+
 class PController:
 
     def __init__(self, k_p, vehicle_mass):
@@ -162,12 +190,13 @@ def main():
     drone = Monorotor()
     MASS_ERROR = 2.00
     K_P = 10.00
+    K_D = 2.0
 
     drone_start_state = drone.X
     drone_mass = drone.m
     print(f'drone start state: {drone_start_state}')
     perceived_mass = drone_mass * MASS_ERROR
-    controller = PController(K_P, perceived_mass)
+    controller = PDController(K_P, K_D, perceived_mass)
 
     time_history = np.array([0.0])
 
@@ -220,8 +249,9 @@ def main():
         # print(f"Length of z_target history and drone state history: {len(z_target_history), len(drone_state_history)}")
         z_target_history = np.hstack((z_target_history, z_target))
         z_actual = drone.z
+        z_dot_actual = drone.z_dot
 
-        drone.thrust = controller.thrust_control(z_target, z_actual)
+        drone.thrust = controller.thrust_control(z_target, z_actual, z_dot_target, z_dot_actual)
         # drone.thrust = 1.0
         # print(f'       z target: {z_target}')
         # print(f'   drone thrust: {drone.thrust}')
