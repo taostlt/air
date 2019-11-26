@@ -80,6 +80,35 @@ class Monorotor:
 
         return self.X
 
+class PIDController:
+    def __init__(self, k_p, k_d, k_i, m):
+        self.k_p = k_p
+        self.k_d = k_d
+        self.k_i = k_i
+        self.vehicle_mass = m
+        self.g = 9.81
+        self.integrated_error = 0.0
+
+    def thrust_control(self,
+                z_target,
+                z_actual,
+                z_dot_target,
+                z_dot_actual,
+                dt=0.1,
+                z_dot_dot_ff=0.0):
+
+        err = z_target - z_actual
+        err_dot = z_dot_target - z_dot_actual
+        self.integrated_error += err * dt
+
+        p = self.k_p * err
+        i = self.integrated_error * self.k_i
+        d = self.k_d * err_dot
+
+        u_bar = p + i + d + z_dot_dot_ff
+        u = self.vehicle_mass * (self.g - u_bar)
+        return u
+
 class PDController:
 
     def __init__(self, k_p, k_d, m):
@@ -105,8 +134,6 @@ class PDController:
         u = self.vehicle_mass * (self.g - u_bar)
 
         return u
-
-
 
 class PController:
 
@@ -188,22 +215,25 @@ def main():
     loop_count = 1
 
     drone = Monorotor()
-    MASS_ERROR = 1.05
+    MASS_ERROR = 1.5
     K_P = 20.00
-    K_D = 2.0
+    K_D = 10.0
+    K_I = 40.0
+
+    AMPLITUDE = 0.5
+    PERIOD    = 0.4
 
     drone_start_state = drone.X
     drone_mass = drone.m
     print(f'drone start state: {drone_start_state}')
     perceived_mass = drone_mass * MASS_ERROR
-    controller = PDController(K_P, K_D, perceived_mass)
+    controller = PIDController(K_P, K_D, K_I, perceived_mass)
 
     time_history = np.array([0.0])
 
     drone_state_history = []
     drone_state_history.append(drone_start_state)       # Adding this line initializes drone_state_history with a value.
-                                                        # Otherwise the len of z_actual & z_target are off by one.
-
+                                                        # Otherwise the len of z_actual & z_target are offset by one.
     # z_target = np.cos(2 * time) - 0.5,         would add here but time has not been defined outside of the while loop.
     z_target_history = np.array([0.0])
 
@@ -253,7 +283,7 @@ def main():
         z_actual = drone.z
         z_dot_actual = drone.z_dot
 
-        drone.thrust = controller.thrust_control(z_target, z_actual, z_dot_target, z_dot_actual)
+        drone.thrust = controller.thrust_control(z_target, z_actual, z_dot_target, z_dot_actual, dt, z_dot_dot_ff = 0.0)
         # drone.thrust = 1.0
         # print(f'       z target: {z_target}')
         # print(f'   drone thrust: {drone.thrust}')
@@ -261,15 +291,15 @@ def main():
         drone.advance_state(dt)
         drone_state_history.append(drone.X)
 
-
-        if time > 5.00:
+        if time > 10.00:
             # dt = 0.002
             # print(f'z_target: {z_target}')
 
             z_actual_history = [h[0] for h in drone_state_history]
             # print(f'z_actual type: {type(z_actual_history)}')
+
             print(f'-------------- TIME: {time} ---------------')
-            z_error = abs(z_target_history - z_actual_history)
+            z_error = abs(z_target_history - z_actual_history)           # Error accumulates in both + and - space.
             print(f'error:{z_target_history[-1] - z_actual_history[-1]}')
 
             # print(f'time history:{time_history}')
@@ -288,8 +318,8 @@ def main():
             plt.title("z target, z actual, over time")
             plt.gca().invert_yaxis()
 
-            plt.subplot(2,1, 2)
-            plt.plot(time_history, z_error)
+            plt.subplot(2,1, 2)              # Error is a positive accumulation so doesn't need to be inverted.
+            plt.plot(time_history, z_error)  # but does need abs(value).
             plt.title("Error Value")
             plt.tight_layout()
             plt.show()
@@ -299,13 +329,12 @@ def main():
             # print(f'        length z_actual: {len(z_actual_history)}')
             # print(f'length z_target_history: {len(z_target_history)}')
 
-
-            print(f'dt as time / fps:{dt}')
-            print(f'dt as time / frames (loop): {time/loop_count}')
+            print(f'dt as (time / fps)   : {dt}')
+            print(f'dt as (time / loops) : {time/loop_count}')
             print(f'# frame  (loop count): {loop_count}')
             print(f'# frame     (time/dt): {time/dt}')
             print(f'# frames (fps * time): {fps * time}')
-            print(f'Average fps:           {loop_count/time}')
+            print(f'Average fps          : {loop_count/time}')
             print(f'Time divided by frame: {time/loop_count}')
             # print(f'z actual list: {z_actual_list}')
             # generate plots
