@@ -284,16 +284,10 @@ def main():
         z_dot_actual = drone.z_dot
 
         drone.thrust = controller.thrust_control(z_target, z_actual, z_dot_target, z_dot_actual, dt, z_dot_dot_ff = 0.0)
-        # drone.thrust = 1.0
-        # print(f'       z target: {z_target}')
-        # print(f'   drone thrust: {drone.thrust}')
-        # print(f'drone z_dot_dot: {drone.z_dot_dot}')
         drone.advance_state(dt)
         drone_state_history.append(drone.X)
 
         if time > 10.00:
-            # dt = 0.002
-            # print(f'z_target: {z_target}')
 
             z_actual_history = [h[0] for h in drone_state_history]
             # print(f'z_actual type: {type(z_actual_history)}')
@@ -301,15 +295,6 @@ def main():
             print(f'-------------- TIME: {time} ---------------')
             z_error = abs(z_target_history - z_actual_history)           # Error accumulates in both + and - space.
             print(f'error:{z_target_history[-1] - z_actual_history[-1]}')
-
-            # print(f'time history:{time_history}')
-
-            # plt.figure(figsize=(8,4))
-            # row, column = 1, 2
-            #
-            # plt.subplot(row, column, 2)
-            # print(f'time history: {time_history}')
-            # t = np.linspace(0.0, time, len(time_history))
 
             plt.subplot(2, 1, 1)
             plt.plot(time_history, z_target_history, color = "blue")
@@ -324,11 +309,6 @@ def main():
             plt.tight_layout()
             plt.show()
 
-            # print(f'            z_actual IT: {z_actual_history}')
-            # print(f'       z_target_history: {np.round(z_target_history,2)}')
-            # print(f'        length z_actual: {len(z_actual_history)}')
-            # print(f'length z_target_history: {len(z_target_history)}')
-
             print(f'dt as (time / fps)   : {dt}')
             print(f'dt as (time / loops) : {time/loop_count}')
             print(f'# frame  (loop count): {loop_count}')
@@ -336,34 +316,7 @@ def main():
             print(f'# frames (fps * time): {fps * time}')
             print(f'Average fps          : {loop_count/time}')
             print(f'Time divided by frame: {time/loop_count}')
-            # print(f'z actual list: {z_actual_list}')
-            # generate plots
-            # print(f'fps is: {fps}')
-            # print(f'Length of t is: {len(t)}')
-
-            # print(f't:\n {t}')
-            # print(f'Length of z_target_list: {len(z_target_list)}')
-            # print(f'z target list: \n{z_target_list}')
-            # plt.plot(t, z_target_list)
-            # plt.show()
-
-            # print(f'Time History: \n {time_history[:,0:5]}')
-            # print(f'Time History List: \n {time_history_list}')
-            # frequency_pymunk_avg = total_dts / time
-            # dt_pymunk_avg = 1.0 / frequency_pymunk_avg
-            # print(f'dt pymunk:{dt_pymunk}')
-            # plt.plot(t, np.full((int(fps+1),),1))
-
-            # plt.show()
-            # print(f'frequency pymunk avg: {frequency_pymunk_avg}')
-            # print(f'dt pymunk avg: {dt_pymunk_avg}')
-
-            # print(f'z actual: {type(z_actual)}, {z_actual}')
-            # print(f'z actual shape: {z_actual.shape}')
-            #
-            # print(f'z path: {type(z_path)}, {z_path}')
-            # print(f't: {t}')
-            # plotting.compare_planned_to_actual(z_actual, z_path, t)
+            
             sys.exit(0)
 
         pygame.display.flip()
